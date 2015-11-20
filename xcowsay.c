@@ -6,7 +6,8 @@
 
 #include "vroot.h"
 
-#define COMMAND "fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n"
+#define COMMAND "cowsay -f tux 'Carry on' | toilet -F gay -f term"
+//"fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term"
 #define SLEEP_IN_SEC 15
 #define COLORS_SIZE 256
 #define BUF_SIZE 1024
@@ -75,24 +76,57 @@ void free_parsed_line(parsed_line_t* parsed_line) {
 	free(parsed_line->len);
 	free(parsed_line->str);
 	
-	parsed_line->color = parsed_line->len = NULL;
+	parsed_line->color = NULL;
+	parsed_line->len = NULL;
 	parsed_line->str = NULL;
 	parsed_line->parts_count = 0;
 }
 
+int get_color(char* str) {
+	int color;
+	if(sscanf(str, "\e[%*[0-9];%*[0-9];%*[0-9];%dm", &color)>0 
+		|| sscanf(str, "\e[%*[0-9];%*[0-9];%dm", &color)>0 
+		|| sscanf(str, "\e[%*[0-9];%dm", &color)>0
+		|| sscanf(str, "\e[%dm", &color)>0)
+			return xterm_colors[color % COLORS_SIZE];
+	return 0;
+}
+
+int get_prefix_len(char* str) {
+	char* result = strstr(str, "m");
+	if(result)
+		return  result - str + 1;
+	return 0;
+}
+
 parsed_line_t parse_line(char* init_str, int init_len, int last_color) {
 	parsed_line_t parsed_line;
-	parsed_line.parts_count = 1;
-	//"\e["
-	//TODO find
+	parsed_line.parts_count = 0;
+	
+	char *substr = init_str-1;
+	int color = -1;
+	
+	while(substr < init_str+init_len && (substr = strstr(substr+1, "\e[")))
+		parsed_line.parts_count++;
+	
 	parsed_line.color = malloc(parsed_line.parts_count * sizeof(parsed_line.color));
 	parsed_line.len = malloc(parsed_line.parts_count * sizeof(parsed_line.len));
 	parsed_line.str = malloc(parsed_line.parts_count * sizeof(parsed_line.str));
 	
-	parsed_line.color[0] = last_color;
-	parsed_line.len[0] = init_len;
-	parsed_line.str[0] = init_str;
-	
+	substr = init_str-1;
+	for(int i=0; i<parsed_line.parts_count; i++) {
+		substr = strstr(substr+1, "\e[");
+		color=get_color(substr);
+		int prefix_len = get_prefix_len(substr);
+		
+		parsed_line.color[i] = color;
+		parsed_line.str[i] = substr + prefix_len;
+		if(i>0)
+			parsed_line.len[i-1] = substr - parsed_line.str[i-1];
+	}
+
+	parsed_line.len[parsed_line.parts_count-1] = init_str + init_len - parsed_line.str[parsed_line.parts_count-1];
+
 	return parsed_line;
 } 
 
@@ -120,12 +154,13 @@ void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct* fs
 
 		parsed_line_t parsed_line = parse_line(buf, len, last_color);
 		for(i=0; i<parsed_line.parts_count; i++) {
-			
 			XSetForeground(dpy, g, parsed_line.color[i]);
-
 			XDrawString(dpy, root, g, posXTmp, posY, parsed_line.str[i], parsed_line.len[i]);
+
 			posXTmp += XTextWidth(fs, parsed_line.str[i], parsed_line.len[i]);
 		}
+
+		last_color = parsed_line.color[parsed_line.parts_count-1];
 		free_parsed_line(&parsed_line);
 
 		posY += lineHeight;
