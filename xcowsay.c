@@ -6,8 +6,7 @@
 
 #include "vroot.h"
 
-#define COMMAND "cowsay -f tux 'Carry on' | toilet -F gay -f term"
-//"fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term"
+#define COMMAND "fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term"
 #define SLEEP_IN_SEC 15
 #define COLORS_SIZE 256
 #define BUF_SIZE 1024
@@ -101,28 +100,34 @@ int get_prefix_len(char* str) {
 
 parsed_line_t parse_line(char* init_str, int init_len, int last_color) {
 	parsed_line_t parsed_line;
-	parsed_line.parts_count = 0;
+	parsed_line.parts_count = 1;
 	
 	char *substr = init_str-1;
 	int color = -1;
 	
 	while(substr < init_str+init_len && (substr = strstr(substr+1, "\e[")))
 		parsed_line.parts_count++;
-	
+
 	parsed_line.color = malloc(parsed_line.parts_count * sizeof(parsed_line.color));
 	parsed_line.len = malloc(parsed_line.parts_count * sizeof(parsed_line.len));
 	parsed_line.str = malloc(parsed_line.parts_count * sizeof(parsed_line.str));
 	
-	substr = init_str-1;
-	for(int i=0; i<parsed_line.parts_count; i++) {
+	//first part:
+	substr = strstr(init_str, "\e[");
+	parsed_line.color[0] = last_color;
+	parsed_line.str[0] = init_str;
+	parsed_line.len[0] = substr - init_str;
+	
+	//other parts:
+	substr = substr-1;
+	for(int i=1; i<parsed_line.parts_count; i++) {
 		substr = strstr(substr+1, "\e[");
-		color=get_color(substr);
+		color = get_color(substr);
 		int prefix_len = get_prefix_len(substr);
 		
 		parsed_line.color[i] = color;
 		parsed_line.str[i] = substr + prefix_len;
-		if(i>0)
-			parsed_line.len[i-1] = substr - parsed_line.str[i-1];
+		parsed_line.len[i-1] = substr - parsed_line.str[i-1];
 	}
 
 	parsed_line.len[parsed_line.parts_count-1] = init_str + init_len - parsed_line.str[parsed_line.parts_count-1];
