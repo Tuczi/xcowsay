@@ -2,13 +2,12 @@
 
 <screensaver name="xcowsay" _label="Xcowsay" gl="no">
 
-  <command arg="-root"/>
+  <number id="delay" type="spinbutton" arg="-d %"
+          _label="Delay in seconds"
+          low="1" high="100" default="6"/>
 
-  <number id="delay" type="spinbutton" arg="-delay %"
-          _label="Delay in seconds" _low-label="Low" _high-label="High"
-          low="1" high="86400" default="120"/>
-  <string id="cmd" arg="-cmd %"
-          _label="Command to execute" default="120"/>
+  <string id="cmd" arg="-c %"
+          _label="Command to execute"/>
 
   <xscreensaver-updater />
 

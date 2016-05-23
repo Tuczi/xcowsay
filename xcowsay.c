@@ -3,14 +3,30 @@
 #include <string.h>
 #include <X11/Xlib.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "vroot.h"
 
-#define COMMAND "fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term"
-//"echo \"abcd\" | toilet -F gay -f term"
-#define SLEEP_IN_SEC 15
 #define COLORS_SIZE 256
 #define BUF_SIZE 1024
+
+#define no_argument 0
+#define required_argument 1
+#define optional_argument 2
+
+typedef struct  {
+  int delay;
+  char* cmd;
+} option_t;
+
+option_t options = {0, 0};
+
+const struct option longopts[] =
+  {
+    {"cmd",      required_argument,        0, 'c'},
+    {"delay",    required_argument,        0, 'd'},
+    {0,0,0,0},
+  };
 
 int xterm_colors[COLORS_SIZE] = {
         0x000000, 0x800000, 0x008000, 0x808000, 0x000080,
@@ -218,7 +234,7 @@ parsed_line_t parse_line(char *init_str, int init_len, CSI_t last_color) {
 
 void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs) {
     int posX = random() % (wa.width / 2), posY = random() % (wa.height / 2) + 10;
-    FILE *pp = popen(COMMAND, "r");
+    FILE *pp = popen(options.cmd, "r");
     if (!pp) return;
 
     /* get line height */
@@ -256,7 +272,35 @@ void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs
     pclose(pp);
 }
 
-int main() {
+void set_options(int argc, char * argv[]) {
+    int index;
+    int iarg=0;
+    int len;
+
+    //turn off getopt error message
+    opterr=1; 
+
+    while(iarg != -1)
+    {
+      iarg = getopt_long(argc, argv, "d:c:", longopts, &index);
+
+      switch (iarg)
+      {
+        case 'd':
+          options.delay = atoi(optarg);
+          break;
+
+        case 'c':
+          len = strlen(optarg) + 1;
+          options.cmd = malloc(sizeof(char)*len);
+          options.cmd[len-1] = '\0';
+          strcpy(options.cmd, optarg);
+          break;
+      }
+    }
+}
+
+int main(int argc, char * argv[]) {
     Display *dpy;
     Window root;
     XWindowAttributes wa;
@@ -265,6 +309,8 @@ int main() {
     Font f;
     XFontStruct *fs;
     XGCValues v;
+
+    set_options(argc, argv);
 
     /* open the display (connect to the X server) */
     dpy = XOpenDisplay(getenv("DISPLAY"));
@@ -294,7 +340,7 @@ int main() {
 
         /* flush changes and sleep */
         XFlush(dpy);
-        sleep(SLEEP_IN_SEC);
+        sleep(options.delay);
     }
 
     XCloseDisplay(dpy);
