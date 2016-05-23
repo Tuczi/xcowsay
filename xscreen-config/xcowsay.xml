@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<screensaver name="xcowsay" _label="Xcowsay" gl="no">
+
+  <command arg="-root"/>
+
+  <number id="delay" type="spinbutton" arg="-delay %"
+          _label="Delay in seconds" _low-label="Low" _high-label="High"
+          low="1" high="86400" default="120"/>
+  <string id="cmd" arg="-cmd %"
+          _label="Command to execute" default="120"/>
+
+  <xscreensaver-updater />
+
+  <_description>
+Displays text 
+Written by Tomasz Kuczma; 2016
+https://github.com/Tuczi/xcowsay
+  </_description>
+</screensaver>
+
