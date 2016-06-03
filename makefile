@@ -4,7 +4,7 @@ CFLAGS=-O3 -s
 all: build install install-extra-cows
 
 build:
-	$(CC) $(CFLAGS) -o xcowsay src/xcowsay.cpp -L/usr/lib -lX11
+	$(CC) $(CFLAGS) -o xcowsay src/main.cpp -L/usr/lib -lX11
 
 install:
 	cp xcowsay /usr/lib/xscreensaver
