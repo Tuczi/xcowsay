@@ -62,8 +62,7 @@
 #include <X11/Xlib.h>
 
 static Window
-VirtualRootWindowOfScreen(screen)
-	Screen *screen;
+VirtualRootWindowOfScreen(Screen *screen)
 {
 	static Screen *save_screen = (Screen *)0;
 	static Window root = (Window)0;

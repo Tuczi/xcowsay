@@ -206,9 +206,9 @@ parsed_line_t parse_line(char *init_str, int init_len, CSI_t last_color) {
     while (substr < init_str + init_len && (substr = strstr(substr + 1, "\e[")))
         parsed_line.parts_count++;
 
-    parsed_line.color = malloc(parsed_line.parts_count * sizeof(*parsed_line.color));
-    parsed_line.len = malloc(parsed_line.parts_count * sizeof(*parsed_line.len));
-    parsed_line.str = malloc(parsed_line.parts_count * sizeof(*parsed_line.str));
+    parsed_line.color = (CSI_t*)malloc(parsed_line.parts_count * sizeof(*parsed_line.color));
+    parsed_line.len = (int*) malloc(parsed_line.parts_count * sizeof(*parsed_line.len));
+    parsed_line.str = (char**) malloc(parsed_line.parts_count * sizeof(*parsed_line.str));
 
     //first part:
     substr = strstr(init_str, "\e[");
@@ -292,7 +292,7 @@ void set_options(int argc, char * argv[]) {
 
         case 'c':
           len = strlen(optarg) + 1;
-          options.cmd = malloc(sizeof(char)*len);
+          options.cmd = (char*) malloc(sizeof(char)*len);
           options.cmd[len-1] = '\0';
           strcpy(options.cmd, optarg);
           break;
@@ -316,7 +316,8 @@ int main(int argc, char * argv[]) {
     dpy = XOpenDisplay(getenv("DISPLAY"));
 
     /* get the root window */
-    root = DefaultRootWindow(dpy);
+    //Screen* screen = DefaultScreenOfDisplay(dpy);
+    root = DefaultRootWindow(dpy);//RootWindowOfScreen(screen);//
 
     /* get attributes of the root window */
     XGetWindowAttributes(dpy, root, &wa);
