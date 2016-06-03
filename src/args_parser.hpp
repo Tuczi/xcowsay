@@ -2,11 +2,7 @@
 #define ARGS_PARSER_HPP_
 
 #include <getopt.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <iostream>
+#include <string>
 
 #define no_argument 0
 #define required_argument 1

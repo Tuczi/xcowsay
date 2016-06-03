@@ -1,5 +1,6 @@
-#include "args_parser.hpp"
+#include <unistd.h>
 
+#include "args_parser.hpp"
 #include "xcowsay.cpp"
 
 int main(int argc, char * argv[]) {

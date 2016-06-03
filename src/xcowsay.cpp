@@ -1,114 +1,19 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <X11/Xlib.h>
-#include <unistd.h>
+#include <cstring>
 #include <vector>
+#include <X11/Xlib.h>
 
-#include "args_parser.hpp"
-#include "xterm_collors.hpp"
+#include "csi.hpp"
 #include "vroot.h"
 
+constexpr size_t BUF_SIZE = 1024;
 
-#define BUF_SIZE 1024
-
-
-//TODO make bold
-struct CSI_t {
-  bool bold;
-  uint32_t fg_color;
-  uint32_t bg_color;
-  
-  CSI_t(): bold(false), fg_color(0xFFFFFF), bg_color(0) { }
-  
-  CSI_t(uint32_t fg_color, uint32_t bg_color): bold(false), fg_color(fg_color), bg_color(bg_color) { }
-};
-
-//TODO refactor
 struct parsed_line_t {
   CSI_t color;
-  const char *str;
+  const char* str;
   size_t len;
   
-  parsed_line_t(CSI_t color, const char *str, int len): color(color), str(str), len(len) { }
+  parsed_line_t(CSI_t color, const char* str, int len): color(color), str(str), len(len) { }
 };
-
-char* find_next_code(char* str) {
-  while(*str && *str!='m'){
-    if(*str==';') return str+1;
-    str++;
-  }
-
-  return NULL;
-}
-
-// TODO refactor (reusable code for csi code 38 and 48)
-// TODO buf (in consequences line) can contains partial esc sequence!
-CSI_t get_color(const char *str) {
-    CSI_t csi;
-    str += 2;
-    char* next = (char*) str;
-    while (next != NULL) {
-        int code = atoi(next);
-        if(code == 0) {
-            csi = CSI_t();
-        } else if(code == 1) {
-            csi.bold = 1;
-        } else if(code >=30 && code <=37) {
-            csi.fg_color = xterm_colors[code-30];
-        } else if(code == 38) {
-            next = find_next_code(next);
-            code = atoi(next);
-            if(code == 5) {
-                next = find_next_code(next);
-                code = atoi(next);
-                
-                csi.fg_color = xterm_colors[code];
-            } else if(code == 2) {
-                next = find_next_code(next);
-                int r = atoi(next);
-                str = next+1;
-                next = find_next_code(next);
-                int g = atoi(next);
-                str = next+1;
-                next = find_next_code(next);
-                int b = atoi(next);
-                
-                csi.fg_color = (r<<16) | (g<<8) | b;
-            }
-        } else if(code == 39) {
-            csi.fg_color = CSI_t().fg_color;
-        } else if(code >=40 && code <=47) {
-            csi.bg_color = xterm_colors[code-40];
-        } else if(code == 48) {
-            next = find_next_code(next);
-            code = atoi(next);
-            if(code == 5) {
-                next = find_next_code(next);
-                code = atoi(next);
-                
-                csi.bg_color = xterm_colors[code];
-            } else if(code == 2) {
-                next = find_next_code(next);
-                int r = atoi(next);
-                str = next+1;
-                next = find_next_code(next);
-                int g = atoi(next);
-                str = next+1;
-                next = find_next_code(next);
-                int b = atoi(next);
-                
-                csi.bg_color = (r<<16) | (g<<8) | b;
-            }
-        } else if(code == 49) {
-            csi.bg_color = CSI_t().bg_color;
-        }
-
-        next = find_next_code(next);
-    }
-
-    return csi;
-}
 
 std::vector<parsed_line_t> parse_line(std::string& str, CSI_t last_color) {
   std::vector<parsed_line_t> parsed_line;
@@ -119,13 +24,12 @@ std::vector<parsed_line_t> parse_line(std::string& str, CSI_t last_color) {
   
   //other parts
   while(pos != std::string::npos) {
-    const char* substr = str.c_str() + pos;
     size_t prefix_end = str.find('m', pos) + 1;
-    
+
     auto& last = parsed_line.back();
-    last.len = substr - last.str;
-    
-    parsed_line.push_back(parsed_line_t(get_color(substr), str.c_str() + prefix_end , 0));
+    last.len = str.c_str() + pos - last.str;
+
+    parsed_line.push_back(parsed_line_t(get_color(str, pos), str.c_str() + prefix_end, 0));
     pos = str.find("\e[", prefix_end);
   }
 
