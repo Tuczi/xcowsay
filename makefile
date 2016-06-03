@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-O3 -s
+CFLAGS=-g -Wall -s
 
 all: build install install-extra-cows
 
