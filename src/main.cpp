@@ -1,7 +1,8 @@
-#include <unistd.h>
+//
+// Created by tuczi on 04.06.16.
+//
 
-#include "args_parser.hpp"
-#include "xcowsay.cpp"
+#include "main.hpp"
 
 int main(int argc, char * argv[]) {
     Display *dpy;

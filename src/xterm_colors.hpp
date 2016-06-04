@@ -1,5 +1,9 @@
-#ifndef XTERM_COLLORS_HPP_
-#define XTERM_COLLORS_HPP_
+//
+// Created by tuczi on 04.06.16.
+//
+
+#ifndef XCOWSAY_XTERM_COLLORS_HPP
+#define XCOWSAY_XTERM_COLLORS_HPP
 
 #define COLORS_SIZE 256
 
@@ -57,4 +61,4 @@ const int xterm_colors[COLORS_SIZE] = {
         0xbcbcbc, 0xc6c6c6, 0xd0d0d0, 0xdadada, 0xe4e4e4,
         0xeeeeee};
 
-#endif
+#endif //XCOWSAY_XTERM_COLLORS_HPP

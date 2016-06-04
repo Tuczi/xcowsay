@@ -1,5 +1,9 @@
-#ifndef ARGS_PARSER_HPP_
-#define ARGS_PARSER_HPP_
+//
+// Created by tuczi on 04.06.16.
+//
+
+#ifndef XCOWSAY_ARGS_PARSER_HPP
+#define XCOWSAY_ARGS_PARSER_HPP
 
 #include <getopt.h>
 #include <string>
@@ -9,41 +13,18 @@
 #define optional_argument 2
 
 struct option_t {
-  int delay;
-  std::string cmd;
+    int delay;
+    std::string cmd;
 };
 
-option_t options;
+extern option_t options;
 
-const struct option longopts[] =
-  {
-    {"cmd",      required_argument,        0, 'c'},
-    {"delay",    required_argument,        0, 'd'},
-    {0,0,0,0},
-  };
+const struct option longopts[] = {
+    {"cmd",   required_argument, 0, 'c'},
+    {"delay", required_argument, 0, 'd'},
+    {0, 0,                       0, 0},
+};
 
-void set_options(int argc, char * argv[]) {
-  int index;
-  int iarg=0;
+void set_options(int argc, char *argv[]);
 
-  //turn off getopt error message
-  opterr=1; 
-
-  while(iarg != -1)
-  {
-    iarg = getopt_long(argc, argv, "d:c:", longopts, &index);
-
-    switch (iarg)
-    {
-      case 'd':
-        options.delay = atoi(optarg);
-        break;
-
-      case 'c':
-        options.cmd = optarg;
-        break;
-    }
-  }
-}
-
-#endif
+#endif //XCOWSAY_ARGS_PARSER_HPP

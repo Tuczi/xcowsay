@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-g -Wall -s
 
-all: build install install-extra-cows
+all: install install-extra-cows
 
 build:
 	$(CC) $(CFLAGS) -o xcowsay src/main.cpp -L/usr/lib -lX11
