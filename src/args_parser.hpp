@@ -20,9 +20,9 @@ struct option_t {
 extern option_t options;
 
 const struct option longopts[] = {
-    {"cmd",   required_argument, 0, 'c'},
-    {"delay", required_argument, 0, 'd'},
-    {0, 0,                       0, 0},
+    {"cmd",   required_argument, nullptr, 'c'},
+    {"delay", required_argument, nullptr, 'd'},
+    {nullptr, no_argument,  nullptr, '\0'},
 };
 
 void set_options(int argc, char *argv[]);

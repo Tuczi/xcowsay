@@ -16,7 +16,7 @@ struct CSI_t {
 
     CSI_t() : bold(false), fg_color(0xFFFFFF), bg_color(0) { }
 
-    CSI_t(uint32_t fg_color, uint32_t bg_color) : bold(false), fg_color(fg_color), bg_color(bg_color) { }
+    CSI_t(uint32_t fg_color_, uint32_t bg_color_) : bold(false), fg_color(fg_color_), bg_color(bg_color_) { }
 };
 
 char *find_next_code(char *str);

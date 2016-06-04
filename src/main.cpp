@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
     XGetWindowAttributes(dpy, root, &wa);
 
     /* create a GC for drawing in the window */
-    g = XCreateGC(dpy, root, 0, NULL);
+    g = XCreateGC(dpy, root, 0, nullptr);
 
     /* load a font */
     f = XLoadFont(dpy, "fixed");

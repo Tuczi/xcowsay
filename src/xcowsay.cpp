@@ -8,7 +8,7 @@ std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color) {
     std::vector<parsed_line_t> parsed_line;
 
     //first part
-    size_t pos = str.find("\e[");
+    size_t pos = str.find("\x1B[");
     parsed_line.push_back(parsed_line_t(last_color, str.c_str(), str.size()));
 
     //other parts
@@ -19,7 +19,7 @@ std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color) {
         last.len = str.c_str() + pos - last.str;
 
         parsed_line.push_back(parsed_line_t(get_color(str, pos), str.c_str() + prefix_end, 0));
-        pos = str.find("\e[", prefix_end);
+        pos = str.find("\x1B[", prefix_end);
     }
 
     auto &last = parsed_line.back();

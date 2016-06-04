@@ -19,7 +19,7 @@ struct parsed_line_t {
     const char *str;
     size_t len;
 
-    parsed_line_t(CSI_t color, const char *str, int len) : color(color), str(str), len(len) { }
+    parsed_line_t(CSI_t color_, const char* str_, int len_) : color(color_), str(str_), len(len_) { }
 };
 
 std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color);

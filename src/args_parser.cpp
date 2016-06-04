@@ -24,6 +24,9 @@ void set_options(int argc, char *argv[]) {
             case 'c':
                 options.cmd = optarg;
                 break;
+
+            default:
+                break;
         }
     }
 }

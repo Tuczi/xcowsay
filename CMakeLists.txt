@@ -10,7 +10,7 @@ set(COMPILATION_WARNINGS "-Wall -Wextra -Wpedantic -Wzero-as-null-pointer-consta
     -Wformat-nonliteral -Wformat-security -Wformat-signedness \
     -Wmissing-declarations -Wshadow -Wswitch-default")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 ${COMPILATION_WARNINGS} -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 ${COMPILATION_WARNINGS} -O3 -s")
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-undefined -L/usr/lib -lX11")
 
