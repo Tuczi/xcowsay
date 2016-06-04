@@ -5,7 +5,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -s")
+set(COMPILATION_WARNINGS "-Wall -Wextra -Wpedantic -Wzero-as-null-pointer-constant\
+    -Wcomment -Wdouble-promotion -Wfloat-conversion -Wfloat-equal \
+    -Wformat-nonliteral -Wformat-security -Wformat-signedness \
+    -Wmissing-declarations -Wshadow -Wswitch-default")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 ${COMPILATION_WARNINGS} -s")
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-undefined -L/usr/lib -lX11")
 
