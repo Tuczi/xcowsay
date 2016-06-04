@@ -24,6 +24,6 @@ struct parsed_line_t {
 
 std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color);
 
-void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs);
+void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs, option_t options);
 
 #endif //XCOWSAY_XCOWSAY_HPP

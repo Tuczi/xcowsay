@@ -17,14 +17,12 @@ struct option_t {
     std::string cmd;
 };
 
-extern option_t options;
-
 const struct option longopts[] = {
     {"cmd",   required_argument, nullptr, 'c'},
     {"delay", required_argument, nullptr, 'd'},
     {nullptr, no_argument,  nullptr, '\0'},
 };
 
-void set_options(int argc, char *argv[]);
+option_t set_options(int argc, char *argv[]);
 
 #endif //XCOWSAY_ARGS_PARSER_HPP

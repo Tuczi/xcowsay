@@ -4,9 +4,8 @@
 
 #include "args_parser.hpp"
 
-option_t options;
-
-void set_options(int argc, char *argv[]) {
+option_t set_options(int argc, char *argv[]) {
+    option_t options;
     int index;
     int iarg = 0;
 
@@ -29,4 +28,6 @@ void set_options(int argc, char *argv[]) {
                 break;
         }
     }
+
+    return options;
 }

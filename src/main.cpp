@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) {
     XFontStruct *fs;
     XGCValues v;
 
-    set_options(argc, argv);
+    const option_t options = set_options(argc, argv);
 
     /* open the display (connect to the X server) */
     dpy = XOpenDisplay(getenv("DISPLAY"));
@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) {
     while (1) {
         XClearWindow(dpy, root);
 
-        draw(dpy, root, wa, g, fs);
+        draw(dpy, root, wa, g, fs, options);
 
         /* flush changes and sleep */
         XFlush(dpy);

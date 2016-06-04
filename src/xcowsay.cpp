@@ -28,7 +28,7 @@ std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color) {
     return parsed_line;
 }
 
-void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs) {
+void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs, option_t options) {
     int posX = random() % (wa.width / 2), posY = random() % (wa.height / 2) + 10;
     FILE *pp = popen(options.cmd.c_str(), "r");
     if (!pp) return;
