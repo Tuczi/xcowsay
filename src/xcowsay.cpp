@@ -28,15 +28,14 @@ std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color) {
     return parsed_line;
 }
 
-void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs, option_t options) {
-    int posX = random() % (wa.width / 2), posY = random() % (wa.height / 2) + 10;
+void draw(Display *dpy, x_screen_attr_t& screen_attr, option_t options) {
+    int posX = random() % (screen_attr.wa.width / 2), posY = random() % (screen_attr.wa.height / 2) + 10;
     FILE *pp = popen(options.cmd.c_str(), "r");
     if (!pp) return;
 
     /* get line height */
-    int lineHeight = fs ? fs->ascent + fs->descent : 13;
+    int lineHeight = screen_attr.fs ? screen_attr.fs->ascent + screen_attr.fs->descent : 13;
     CSI_t last_color;
-
     while (true) {
         std::string buf(BUF_SIZE, '\0');
         int posXTmp = posX;
@@ -49,9 +48,9 @@ void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs
 
         auto parsed_line = parse_line(buf, last_color);
         for (auto &fragment: parsed_line) {
-            XSetForeground(dpy, g, fragment.color.fg_color);
-            XDrawString(dpy, root, g, posXTmp, posY, fragment.str, fragment.len);
-            posXTmp += XTextWidth(fs, fragment.str, fragment.len);
+            XSetForeground(dpy, screen_attr.g, fragment.color.fg_color);
+            XDrawString(dpy, screen_attr.root, screen_attr.g, posXTmp, posY, fragment.str, fragment.len);
+            posXTmp += XTextWidth(screen_attr.fs, fragment.str, fragment.len);
         }
         last_color = parsed_line.back().color;
 
@@ -59,4 +58,9 @@ void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs
     }
 
     pclose(pp);
+}
+
+void draw(Display *dpy, std::vector<x_screen_attr_t>& screens, option_t options) {
+  for(auto& it: screens)
+    draw(dpy, it, options);
 }

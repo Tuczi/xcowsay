@@ -11,6 +11,7 @@
 
 #include "csi.hpp"
 #include "args_parser.hpp"
+#include "screen_attr.hpp"
 
 constexpr size_t BUF_SIZE = 1024;
 
@@ -24,6 +25,7 @@ struct parsed_line_t {
 
 std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color);
 
-void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs, option_t options);
+void draw(Display *dpy, x_screen_attr_t& screens, option_t options);
+void draw(Display *dpy, std::vector<x_screen_attr_t>& screens, option_t options);
 
 #endif //XCOWSAY_XCOWSAY_HPP

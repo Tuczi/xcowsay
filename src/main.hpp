@@ -9,6 +9,6 @@
 
 #include "args_parser.hpp"
 #include "xcowsay.hpp"
-#include "vroot.h"
+#include "screen_attr.hpp"
 
 #endif //XCOWSAY_MAIN_HPP

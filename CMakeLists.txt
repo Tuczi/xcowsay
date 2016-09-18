@@ -18,7 +18,8 @@ set(SOURCE_FILES
         src/args_parser.cpp
         src/csi.cpp
         src/main.cpp
-        src/xcowsay.cpp)
+        src/xcowsay.cpp
+        src/screen_attr.cpp)
 
 set(HEADER_FILES
         src/csi.hpp
@@ -26,7 +27,8 @@ set(HEADER_FILES
         src/main.hpp
         src/vroot.h
         src/xcowsay.hpp
-        src/xterm_colors.hpp)
+        src/xterm_colors.hpp
+        src/screen_attr.hpp)
 
 add_executable(xcowsay ${SOURCE_FILES} ${HEADER_FILES})
 
