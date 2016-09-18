@@ -12,3 +12,9 @@ Xcowsay respects CSI (ANSI escape sequences) so your output can be colored!
 Try setup below command in settings:
 
 ```fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term```
+
+## Config
+* delay in seconds
+* comand to execute
+* font - use [X logical font description (XLFD)](https://en.wikipedia.org/wiki/X_logical_font_description) to specify the font eg. ```-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*```.
+  Use ```xlsfonts``` command to list avaliable fonts

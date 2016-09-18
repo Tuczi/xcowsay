@@ -4,7 +4,7 @@
 
 #include "args_parser.hpp"
 
-option_t set_options(int argc, char *argv[]) {
+option_t get_options(int argc, char *argv[]) {
     option_t options;
     int index;
     int iarg = 0;
@@ -13,7 +13,7 @@ option_t set_options(int argc, char *argv[]) {
     opterr = 1;
 
     while (iarg != -1) {
-        iarg = getopt_long(argc, argv, "d:c:", longopts, &index);
+        iarg = getopt_long(argc, argv, "d:c:f:", longopts, &index);
 
         switch (iarg) {
             case 'd':
@@ -23,6 +23,9 @@ option_t set_options(int argc, char *argv[]) {
             case 'c':
                 options.cmd = optarg;
                 break;
+
+            case 'f':
+                options.font = optarg;
 
             default:
                 break;

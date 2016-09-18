@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) {
     XFontStruct *fs;
     XGCValues v;
 
-    const option_t options = set_options(argc, argv);
+    const option_t options = get_options(argc, argv);
 
     /* open the display (connect to the X server) */
     dpy = XOpenDisplay(getenv("DISPLAY"));
@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
     g = XCreateGC(dpy, root, 0, nullptr);
 
     /* load a font */
-    f = XLoadFont(dpy, "fixed");
+    f = XLoadFont(dpy, options.font.c_str());
     XSetFont(dpy, g, f);
 
     /* get font metrics */
@@ -50,4 +50,3 @@ int main(int argc, char * argv[]) {
 
     XCloseDisplay(dpy);
 }
-
