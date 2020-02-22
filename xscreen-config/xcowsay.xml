@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="xcowsay" _label="Xcowsay" gl="no">
+<screensaver name="xcowsay" _label="xcowsay" gl="no">
 
   <number id="delay" type="spinbutton" arg="-d %"
           _label="Delay in seconds"
@@ -9,14 +9,14 @@
   <string id="cmd" arg="-c %"
           _label="Command to execute"/>
 
-  <string id="cmd" arg="-f %"
+  <string id="font" arg="-f %"
           _label="Font"
           default="-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*"/>
 
   <xscreensaver-updater />
 
   <_description>
-Displays text
+Run a command and display the output text.
 Written by Tomasz Kuczma; 2016
 https://github.com/Tuczi/xcowsay
   </_description>

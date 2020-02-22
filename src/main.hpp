@@ -11,4 +11,6 @@
 #include "xcowsay.hpp"
 #include "vroot.h"
 
+Window get_root_window(Display*);
+
 #endif //XCOWSAY_MAIN_HPP

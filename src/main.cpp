@@ -1,52 +1,86 @@
 //
 // Created by tuczi on 04.06.16.
 //
-
 #include "main.hpp"
 
+Window get_root_window(Display* display) {
+	char* end;
+	const char* xscreensaver_window_env = getenv("XSCREENSAVER_WINDOW");
+
+	if(xscreensaver_window_env != nullptr) {
+		Window xscreensaver_window = (Window) std::strtoul(xscreensaver_window_env, &end, 0);
+
+		if ((xscreensaver_window != 0)
+			&& (end != nullptr)
+			&& ((*end == ' ') || (*end == '\0'))
+			&& (errno != ERANGE)) {
+
+			return  xscreensaver_window;
+		}
+	}
+
+	//Fallback to RootWindowOfScreen
+	Window root_window = DefaultRootWindow(display);
+
+	if(root_window != 0) {
+		return root_window;
+	}
+
+	// TODO debug mode
+
+	//Fallback to new windows - usefull for debug
+	int screen = DefaultScreen(display);
+	Window window = XCreateSimpleWindow(display, RootWindow(display, screen), 24, 48, 860, 640, 1, WhitePixel(display, screen), BlackPixel(display, screen));
+	XMapWindow(display, window);
+
+	return window;
+}
+
 int main(int argc, char * argv[]) {
-    Display *dpy;
-    Window root;
-    XWindowAttributes wa;
-    GC g;
+	const option_t options = get_options(argc, argv);
 
-    Font f;
-    XFontStruct *fs;
-    XGCValues v;
+	/* open the display (connect to the X server) */
+	Display* display = XOpenDisplay(getenv("DISPLAY"));
+	if(display == nullptr) {
+		//TODO error message
+		exit(EXIT_FAILURE);
+	}
 
-    const option_t options = get_options(argc, argv);
+	Window root = get_root_window(display);
+	if(root == 0) {
+		//TODO error message
+		exit(EXIT_FAILURE);
+	}
 
-    /* open the display (connect to the X server) */
-    dpy = XOpenDisplay(getenv("DISPLAY"));
+	/* get attributes of the root window */
+	XWindowAttributes window_attributes;
+	XGetWindowAttributes(display, root, &window_attributes);
 
-    /* get the root window */
-    //Screen* screen = DefaultScreenOfDisplay(dpy);
-    root = DefaultRootWindow(dpy);//RootWindowOfScreen(screen);//
+	/* create a GC for drawing in the window */
+	GC gc = XCreateGC(display, root, 0, nullptr);
 
-    /* get attributes of the root window */
-    XGetWindowAttributes(dpy, root, &wa);
+	/* load a font */
+	Font font = XLoadFont(display, options.font.c_str());
+	//TODO error handling
+	XSetFont(display, gc, font);
 
-    /* create a GC for drawing in the window */
-    g = XCreateGC(dpy, root, 0, nullptr);
+	/* get font metrics */
+	XGCValues v;
+	XGetGCValues(display, gc, GCFont, &v);
+	XFontStruct* font_struct = XQueryFont(display, v.font);
 
-    /* load a font */
-    f = XLoadFont(dpy, options.font.c_str());
-    XSetFont(dpy, g, f);
 
-    /* get font metrics */
-    XGetGCValues(dpy, g, GCFont, &v);
-    fs = XQueryFont(dpy, v.font);
+	const int screen = DefaultScreen(display);
+	XSetWindowBackground(display, root, BlackPixel(display, screen));
 
-    /* draw something */
-    while (1) {
-        XClearWindow(dpy, root);
+	while (true) {
+		XClearWindow(display, root);
 
-        draw(dpy, root, wa, g, fs, options);
+		draw(display, root, window_attributes, gc, font_struct, options);
 
-        /* flush changes and sleep */
-        XFlush(dpy);
-        sleep(options.delay);
-    }
+		XFlush(display);
+		sleep(options.delay);
+	}
 
-    XCloseDisplay(dpy);
+	XCloseDisplay(display);
 }

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=xcowsay
+Comment=Run a command and display the output text. Written by Tomasz Kuczma; 2016 https://github.com/Tuczi/xcowsay
+TryExec=/usr/libexec/xfce4-screensaver/xcowsay
+Exec=/usr/libexec/xfce4-screensaver/xcowsay -f '-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*' -d 6 -c 'echo -e "\033[31mHello\e[0m xcowsay"'
+StartupNotify=false
+Terminal=false
+Type=Application
+Categories=Screensaver;
+OnlyShowIn=XFCE;
