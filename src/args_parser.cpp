@@ -4,33 +4,49 @@
 
 #include "args_parser.hpp"
 
-option_t get_options(int argc, char *argv[]) {
-    option_t options;
-    int index;
-    int iarg = 0;
+namespace xcowsay {
 
-    //turn off getopt error message
-    opterr = 1;
+const struct option OptionsFactory::longopts[] = {
+	{"cmd",   required_argument, nullptr, 'c'},
+	{"delay", required_argument, nullptr, 'd'},
+	{"font",  required_argument, nullptr, 'f'},
+	{"debug", no_argument, nullptr, 'D'},
+	{nullptr, no_argument,  nullptr, '\0'},
+};
 
-    while (iarg != -1) {
-        iarg = getopt_long(argc, argv, "d:c:f:", longopts, &index);
+Options OptionsFactory::fromArgs(int argc, char* argv[]) {
+	Options options;
+	int index;
+	int iarg = 0;
 
-        switch (iarg) {
-            case 'd':
-                options.delay = atoi(optarg);
-                break;
+	//turn off getopt error message
+	opterr = 1;
 
-            case 'c':
-                options.cmd = optarg;
-                break;
+	while (iarg != -1) {
+		iarg = getopt_long(argc, argv, "d:c:f:D", longopts, &index);
+		switch (iarg) {
+			case 'd':
+				options.delay = atoi(optarg);
+				break;
 
-            case 'f':
-                options.font = optarg;
+			case 'c':
+				options.cmd = optarg;
+				break;
 
-            default:
-                break;
-        }
-    }
+			case 'f':
+				options.font = optarg;
+				break;
 
-    return options;
+			case 'D':
+				options.debug = true;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return options;
+}
+
 }

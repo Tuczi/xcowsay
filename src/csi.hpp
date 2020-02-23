@@ -8,21 +8,45 @@
 #include "xterm_colors.hpp"
 #include <string>
 
+namespace xcowsay {
+
 //TODO implement bold
-struct CSI_t {
-    bool bold;
-    uint32_t fg_color;
-    uint32_t bg_color;
+struct Csi {
+	bool bold;
+	uint32_t fg_color;
+	uint32_t bg_color;
 
-    CSI_t() : bold(false), fg_color(0xFFFFFF), bg_color(0) { }
+	Csi() : bold(false), fg_color(0xFFFFFF), bg_color(0) { }
 
-    CSI_t(uint32_t fg_color_, uint32_t bg_color_) : bold(false), fg_color(fg_color_), bg_color(bg_color_) { }
+	Csi(uint32_t fg_color_, uint32_t bg_color_) : bold(false), fg_color(fg_color_), bg_color(bg_color_) { }
 };
 
-char *find_next_code(char *str);
+struct CsiStringFragment {
+	Csi color;
+	const char *str;
+	size_t len;
 
-uint32_t get_extended_color(char *&next);
+	CsiStringFragment(Csi color_, const char* str_, int len_) : color(color_), str(str_), len(len_) { }
+};
 
-CSI_t get_color(std::string &str, size_t start);
+class CsiParser {
+	private:
+		CsiStringFragment currentFragment = CsiStringFragment(Csi(), nullptr, 0);// TODO fix passing nullptr
+		std::string buffer;
+		bool bufferEnd = false;
+		size_t readStart = 0;
+		std::string previousBufferCsiStartSequence;
 
+		int getExtendedColor(const char*, char**);
+		Csi parseCsiSequence(Csi, char*, char**);
+		int strToCsiInt(const char*, char**);
+
+	public:
+		void moveBuffer(std::string&&);
+		bool hasNextFragment();
+		void parseNextFragment();
+		CsiStringFragment getCurrentStringFragment();
+};
+
+}
 #endif //XCOWSAY_CSI_HPP

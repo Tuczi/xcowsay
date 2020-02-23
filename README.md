@@ -66,6 +66,9 @@ Following params can be configured in screensaver settings GUI:
 
 **xfce4-screensaver settings GUI is not supported yet.** As a workaround you can edit `xcowsay.desktop` file and add your parameters to `Exec` section.
 
+Other options:
+* `-D` - debug mode. Runs xcowsay in separate window instead of root window (screensaver)
+
 ## Install special cows
 *This step is optional.*
 You can install additional cows for cowsay eg. colorfull christmas tree.

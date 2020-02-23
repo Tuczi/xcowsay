@@ -4,59 +4,146 @@
 
 #include "xcowsay.hpp"
 
-std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color) {
-    std::vector<parsed_line_t> parsed_line;
+namespace xcowsay {
 
-    //first part
-    size_t pos = str.find("\x1B[");
-    parsed_line.push_back(parsed_line_t(last_color, str.c_str(), str.size()));
+/**
+ * returns:
+ *   true if pipe is not end of pipe
+ *   false otherwise
+ **/
+bool XCowsay::readLine(FILE* file, std::string& buffer) {
+	char* line = fgets((char*) buffer.c_str(), buffer.length(), file);
+	if (line == nullptr)
+		return false;
 
-    //other parts
-    while (pos != std::string::npos) {
-        size_t prefix_end = str.find('m', pos) + 1;
+	size_t len = strnlen(buffer.c_str(), buffer.length());
+	buffer.resize(len - 1);
 
-        auto &last = parsed_line.back();
-        last.len = str.c_str() + pos - last.str;
-
-        parsed_line.push_back(parsed_line_t(get_color(str, pos), str.c_str() + prefix_end, 0));
-        pos = str.find("\x1B[", prefix_end);
-    }
-
-    auto &last = parsed_line.back();
-    last.len = str.c_str() + str.size() - last.str;
-
-    return parsed_line;
+	return true;
 }
 
-void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs, option_t options) {
-    int posX = random() % (wa.width / 2), posY = random() % (wa.height / 2) + 10;
-    FILE *pp = popen(options.cmd.c_str(), "r");
-    if (!pp) return;
+void XCowsay::draw() {
+	while (true) {
+		XClearWindow(display, window);
 
-    /* get line height */
-    int lineHeight = fs ? fs->ascent + fs->descent : 13;
-    CSI_t last_color;
+		//TODO handle partially displayed frames
+		drawFrame();
 
-    while (true) {
-        std::string buf(BUF_SIZE, '\0');
-        int posXTmp = posX;
+		XFlush(display);
+		sleep(options.delay);
+	}
 
-        char *line = fgets((char *) buf.c_str(), BUF_SIZE, pp);
-        if (!line) break;
+	XCloseDisplay(display);
+}
+/**
+ * returns
+ *   true if fram was fully rendered
+ *   false otherwise
+ **/
+bool XCowsay::drawFrame() {
+	FILE* pipe = popen(options.cmd.c_str(), "r");
+	if (pipe == nullptr) {
+		return false;
+	}
 
-        size_t len = strnlen(buf.c_str(), BUF_SIZE);
-        buf.resize(len - 1);
+	const int lineHeight = fontStruct != nullptr ? fontStruct->ascent + fontStruct->descent : 13;//TODO method getLineHight
+	int positionX = random() % (windowAttributes.width / 2);
+	int positionY = random() % (windowAttributes.height / 2) + 10; //TODO method getRandomWindowPosition
 
-        auto parsed_line = parse_line(buf, last_color);
-        for (auto &fragment: parsed_line) {
-            XSetForeground(dpy, g, fragment.color.fg_color);
-            XDrawString(dpy, root, g, posXTmp, posY, fragment.str, fragment.len);
-            posXTmp += XTextWidth(fs, fragment.str, fragment.len);
-        }
-        last_color = parsed_line.back().color;
+	CsiParser parser;
+	while (true) {
+		std::string buffer(BUF_SIZE, '\0');
+		const bool endOfPipe = !readLine(pipe, buffer);
+		if(endOfPipe) {
+			//TODO print the rest of buffer in parser
+			break;
+		}
 
-        posY += lineHeight;
-    }
+		int positionXTmp = positionX;
+		parser.moveBuffer(std::move(buffer));
+		while(parser.hasNextFragment()) {
+			parser.parseNextFragment();
+			auto string_fragment = parser.getCurrentStringFragment();
 
-    pclose(pp);
+			XSetForeground(display, gc, string_fragment.color.fg_color);
+			XDrawString(display, window, gc, positionXTmp, positionY, string_fragment.str, string_fragment.len);
+			positionXTmp += XTextWidth(fontStruct, string_fragment.str, string_fragment.len);
+		}
+		positionY += lineHeight;
+	}
+
+	pclose(pipe);
+	return true;
+}
+
+Window XCowsayFactory::getRootWindow(Display* display, Options options) {
+	if(options.debug) {
+		//Use new standalone window
+		int screen = DefaultScreen(display);
+		Window window = XCreateSimpleWindow(display, RootWindow(display, screen), 24, 48, 860, 640, 1, WhitePixel(display, screen), BlackPixel(display, screen));
+		XMapWindow(display, window);
+
+		return window;
+	}
+
+	char* end;
+	const char* xscreensaver_window_env = getenv("XSCREENSAVER_WINDOW");
+
+	if(xscreensaver_window_env != nullptr) {
+		Window xscreensaver_window = (Window) std::strtoul(xscreensaver_window_env, &end, 0);
+
+		if ((xscreensaver_window != 0)
+			&& (end != nullptr)
+			&& ((*end == ' ') || (*end == '\0'))
+			&& (errno != ERANGE)) {
+
+			return  xscreensaver_window;
+		}
+	}
+
+	//Fallback vroot.h
+	return DefaultRootWindow(display);
+}
+
+Display* XCowsayFactory::getOpenXServerDisplay() {
+	return XOpenDisplay(getenv("DISPLAY"));
+}
+
+XCowsay XCowsayFactory::fromOptions(Options options) {
+	Display* display = getOpenXServerDisplay();
+	if(display == nullptr) {
+		//TODO error message
+		exit(EXIT_FAILURE);
+	}
+
+	Window root = getRootWindow(display, options);
+	if(root == 0) {
+		//TODO error message
+		exit(EXIT_FAILURE);
+	}
+
+	/* get attributes of the root window */
+	XWindowAttributes window_attributes;
+	XGetWindowAttributes(display, root, &window_attributes);
+
+	/* create a GC for drawing in the window */
+	GC gc = XCreateGC(display, root, 0, nullptr);
+
+	/* load a font */
+	Font font = XLoadFont(display, options.font.c_str());
+	//TODO error handling
+	XSetFont(display, gc, font);
+
+	/* get font metrics */
+	XGCValues v;
+	XGetGCValues(display, gc, GCFont, &v);
+	XFontStruct* font_struct = XQueryFont(display, v.font);
+	//TODO error handling
+
+	int screen = DefaultScreen(display);
+	XSetWindowBackground(display, root, BlackPixel(display, screen));
+
+	return XCowsay(display, root, window_attributes, gc, font_struct, options);
+}
+
 }

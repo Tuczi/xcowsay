@@ -5,8 +5,11 @@
 #ifndef XCOWSAY_XTERM_COLLORS_HPP
 #define XCOWSAY_XTERM_COLLORS_HPP
 
-#define COLORS_SIZE 256
+#include <string>
 
+namespace xcowsay {
+
+static const size_t COLORS_SIZE = 256;
 const int xterm_colors[COLORS_SIZE] = {
         0x000000, 0x800000, 0x008000, 0x808000, 0x000080,
         0x800080, 0x008080, 0xc0c0c0, 0x808080, 0xff0000,
@@ -60,5 +63,7 @@ const int xterm_colors[COLORS_SIZE] = {
         0x8a8a8a, 0x949494, 0x9e9e9e, 0xa8a8a8, 0xb2b2b2,
         0xbcbcbc, 0xc6c6c6, 0xd0d0d0, 0xdadada, 0xe4e4e4,
         0xeeeeee};
+
+}
 
 #endif //XCOWSAY_XTERM_COLLORS_HPP

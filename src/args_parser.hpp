@@ -7,24 +7,23 @@
 
 #include <getopt.h>
 #include <string>
+namespace xcowsay {
 
-#define no_argument 0
-#define required_argument 1
-#define optional_argument 2
+struct Options {
+	int delay;
+	std::string cmd;
+	std::string font;
 
-struct option_t {
-    int delay;
-    std::string cmd;
-    std::string font;
+	bool debug = false;
 };
 
-const struct option longopts[] = {
-    {"cmd",   required_argument, nullptr, 'c'},
-    {"delay", required_argument, nullptr, 'd'},
-    {"font",  required_argument, nullptr, 'f'},
-    {nullptr, no_argument,  nullptr, '\0'},
+class OptionsFactory {
+	private:
+		static const struct option longopts[];
+
+	public:
+		static Options fromArgs(int argc, char *argv[]);
 };
 
-option_t get_options(int argc, char *argv[]);
-
+}
 #endif //XCOWSAY_ARGS_PARSER_HPP

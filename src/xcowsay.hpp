@@ -8,22 +8,43 @@
 #include <cstring>
 #include <vector>
 #include <X11/Xlib.h>
+#include <unistd.h>
 
 #include "csi.hpp"
 #include "args_parser.hpp"
+#include "vroot.h"
 
-constexpr size_t BUF_SIZE = 1024;
+namespace xcowsay {
 
-struct parsed_line_t {
-    CSI_t color;
-    const char *str;
-    size_t len;
+class XCowsay {
+	private:
+		static const size_t BUF_SIZE = 1024;
 
-    parsed_line_t(CSI_t color_, const char* str_, int len_) : color(color_), str(str_), len(len_) { }
+		Display* display;
+		Window window;
+		XWindowAttributes windowAttributes;
+		GC gc;
+		XFontStruct* fontStruct;
+		Options options;
+
+		bool readLine(FILE*, std::string&);
+		bool drawFrame();
+
+	public:
+		XCowsay(Display* display_, Window window_, XWindowAttributes windowAttributes_, GC gc_, XFontStruct* fontStruct_, Options options_)
+			: display(display_),window(window_),windowAttributes(windowAttributes_), gc(gc_), fontStruct(fontStruct_), options(options_) { }
+
+		void draw();
 };
 
-std::vector<parsed_line_t> parse_line(std::string &str, CSI_t last_color);
+class XCowsayFactory {
+	private:
+		static Window getRootWindow(Display*, Options);
+		static Display* getOpenXServerDisplay();
 
-void draw(Display *dpy, Window root, XWindowAttributes wa, GC g, XFontStruct *fs, option_t options);
+	public:
+		static XCowsay fromOptions(Options);
+};
 
+}
 #endif //XCOWSAY_XCOWSAY_HPP
