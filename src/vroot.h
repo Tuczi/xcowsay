@@ -62,55 +62,54 @@
 #include <X11/Xlib.h>
 
 static Window
-VirtualRootWindowOfScreen(Screen *screen)
-{
-	static Screen *save_screen = (Screen *)0;
-	static Window root = (Window)0;
+VirtualRootWindowOfScreen(Screen *screen) {
+  static Screen *save_screen = (Screen *) 0;
+  static Window root = (Window) 0;
 
-	if (screen != save_screen) {
-		Display *dpy = DisplayOfScreen(screen);
-		Atom __SWM_VROOT = None;
-		int i;
-		Window rootReturn, parentReturn, *children;
-		unsigned int numChildren;
+  if (screen != save_screen) {
+    Display *dpy = DisplayOfScreen(screen);
+    Atom __SWM_VROOT = None;
+    int i;
+    Window rootReturn, parentReturn, *children;
+    unsigned int numChildren;
 
-		root = RootWindowOfScreen(screen);
+    root = RootWindowOfScreen(screen);
 
-		/* go look for a virtual root */
-		__SWM_VROOT = XInternAtom(dpy, "__SWM_VROOT", False);
-		if (XQueryTree(dpy, root, &rootReturn, &parentReturn,
-				 &children, &numChildren)) {
-			for (i = 0; i < numChildren; i++) {
-				Atom actual_type;
-				int actual_format;
-				unsigned long nitems, bytesafter;
-				Window *newRoot = (Window *)0;
+    /* go look for a virtual root */
+    __SWM_VROOT = XInternAtom(dpy, "__SWM_VROOT", False);
+    if (XQueryTree(dpy, root, &rootReturn, &parentReturn,
+                   &children, &numChildren)) {
+      for (i = 0; i < numChildren; i++) {
+        Atom actual_type;
+        int actual_format;
+        unsigned long nitems, bytesafter;
+        Window *newRoot = (Window *) 0;
 
-				if (XGetWindowProperty(dpy, children[i],
-					__SWM_VROOT, 0, 1, False, XA_WINDOW,
-					&actual_type, &actual_format,
-					&nitems, &bytesafter,
-					(unsigned char **) &newRoot) == Success
-				    && newRoot) {
-				    root = *newRoot;
-				    break;
-				}
-			}
-			if (children)
-				XFree((char *)children);
-		}
+        if (XGetWindowProperty(dpy, children[i],
+                               __SWM_VROOT, 0, 1, False, XA_WINDOW,
+                               &actual_type, &actual_format,
+                               &nitems, &bytesafter,
+                               (unsigned char **) &newRoot) == Success
+            && newRoot) {
+          root = *newRoot;
+          break;
+        }
+      }
+      if (children)
+        XFree((char *) children);
+    }
 
-		save_screen = screen;
-	}
+    save_screen = screen;
+  }
 
-	return root;
+  return root;
 }
 
 #undef RootWindowOfScreen
 #define RootWindowOfScreen(s) VirtualRootWindowOfScreen(s)
 
 #undef RootWindow
-#define RootWindow(dpy,screen) VirtualRootWindowOfScreen(ScreenOfDisplay(dpy,screen))
+#define RootWindow(dpy, screen) VirtualRootWindowOfScreen(ScreenOfDisplay(dpy,screen))
 
 #undef DefaultRootWindow
 #define DefaultRootWindow(dpy) VirtualRootWindowOfScreen(DefaultScreenOfDisplay(dpy))

@@ -1,10 +1,9 @@
-.idea/misc.xml
-.idea/modules.xml
-.idea/workspace.xml
-.idea/xcowsay.iml
+.idea
+xcowsay.cbp
+
 CMakeCache.txt
-CMakeFiles/
+CMakeFiles
 Makefile
-bin/
+bin
 cmake_install.cmake
 install_manifest.txt

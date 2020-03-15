@@ -67,7 +67,7 @@ Following params can be configured in screensaver settings GUI:
 **xfce4-screensaver settings GUI is not supported yet.** As a workaround you can edit `xcowsay.desktop` file and add your parameters to `Exec` section.
 
 Other options:
-* `-D` - debug mode. Runs xcowsay in separate window instead of root window (screensaver)
+* `-D` - debug mode. It runs xcowsay in separate window instead of root window (screensaver)
 
 ## Install special cows
 *This step is optional.*
@@ -76,6 +76,15 @@ To do that just copy them to cowsay cows directory:
 ```
 cp cows/* /usr/share/cowsay/cows
 ```
+
+## Debug mode
+Debug mode runs xcowsay in separate window instead of root window (screensaver). To enable it use `-D` switch.
+Example: `./bin/xcowsay -D -d 5 -f '-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*' -c 'echo "Hello \e[31;42mXCowsay\e[0;32m (debug mode)\e[0m"'`
+
+## Development
+Style:
+1. Use Google C++ code style.
+2. Add blank line in the end of files.
 
 # TODO list:
 - add proper configuration layer for xfce4-screensaver - check out https://git.xfce.org/apps/xfce4-screensaver/tree/savers/floaters.c

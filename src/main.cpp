@@ -3,9 +3,9 @@
 //
 #include "main.hpp"
 
-int main(int argc, char * argv[]) {
-	const auto options = xcowsay::OptionsFactory::fromArgs(argc, argv);
-	auto xcowsay = xcowsay::XCowsayFactory::fromOptions(options);
+int main(int argc, char *argv[]) {
+  const auto options = xcowsay::OptionsFactory::fromArgs(argc, argv);
+  auto xcowsay = xcowsay::XCowsayFactory::fromOptions(options);
 
-	xcowsay.draw();
+  xcowsay.draw();
 }
