@@ -43,13 +43,13 @@ Display *XCowsayFactory::getOpenXServerDisplay() {
 XCowsay XCowsayFactory::fromOptions(const Options &options) {
   Display *display = getOpenXServerDisplay();
   if (display == nullptr) {
-    //TODO error message
+    syslog(LOG_ERR, "Cannot open XServer display. $DISPLAY env is \"%s\"", getenv("DISPLAY"));
     exit(EXIT_FAILURE);
   }
 
   Window root = getRootWindow(display, options);
   if (root == 0) {
-    //TODO error message
+    syslog(LOG_ERR, "Cannot get root window. $XSCREENSAVER_WINDOW env is \"%s\"", getenv("XSCREENSAVER_WINDOW"));
     exit(EXIT_FAILURE);
   }
 
@@ -70,7 +70,7 @@ XCowsay XCowsayFactory::fromOptions(const Options &options) {
   XGetGCValues(display, gc, GCFont, &v);
   XFontStruct *fontStruct = XQueryFont(display, v.font);
   if (fontStruct == nullptr) {
-    //TODO error message
+    syslog(LOG_ERR, "Cannot query font. Font is \"%s\"", options.font.c_str());
     exit(EXIT_FAILURE);
   }
 

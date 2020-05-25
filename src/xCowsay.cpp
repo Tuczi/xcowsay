@@ -48,6 +48,7 @@ void XCowsay::draw() {
 bool XCowsay::drawFrame() {
   FILE *pipe = popen(options.cmd.c_str(), "r");
   if (pipe == nullptr) {
+    syslog(LOG_ERR, "Cannot open pipe. Pipe is \"%s\"", options.cmd.c_str());
     return false;
   }
 
@@ -76,18 +77,18 @@ bool XCowsay::drawFrame() {
       parser.moveBuffer(std::move(buffer));
       while (parser.hasNextFragment()) {
         parser.parseNextFragment();
-        auto string_fragment = parser.getCurrentStringFragment();
+        auto stringFragment = parser.getCurrentStringFragment();
 
-        XSetForeground(display, gc, string_fragment.color.fg_color);
+        XSetForeground(display, gc, stringFragment.color.fg_color);
         XDrawString(display,
                     window,
                     gc,
                     positionXTmp,
                     positionY,
-                    string_fragment.str.data(),
-                    string_fragment.str.size());
+                    stringFragment.str.data(),
+                    stringFragment.str.size());
 
-        positionXTmp += XTextWidth(fontStruct, string_fragment.str.data(), string_fragment.str.size());
+        positionXTmp += XTextWidth(fontStruct, stringFragment.str.data(), stringFragment.str.size());
       }
     } while (!fullLineRead);
 

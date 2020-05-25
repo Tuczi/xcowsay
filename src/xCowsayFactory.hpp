@@ -6,13 +6,13 @@
 #define XCOWSAY_XCOWSAYFACTORY_HPP
 
 #include "xCowsay.hpp"
+#include "logger.hpp"
 
 namespace xcowsay {
 
 class XCowsayFactory {
  private:
   static Window getRootWindow(Display *, const xcowsay::Options &);
-
   static Display *getOpenXServerDisplay();
 
  public:

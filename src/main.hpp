@@ -5,6 +5,7 @@
 #ifndef XCOWSAY_MAIN_HPP
 #define XCOWSAY_MAIN_HPP
 
+#include "logger.hpp"
 #include "options.hpp"
 #include "xCowsayFactory.hpp"
 #include "optionsFactory.hpp"

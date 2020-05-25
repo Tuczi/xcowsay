@@ -17,6 +17,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -s")
 
 add_executable(xcowsay
+        src/logger.hpp
         src/options.hpp
         src/vroot.h
         src/optionsFactory.cpp

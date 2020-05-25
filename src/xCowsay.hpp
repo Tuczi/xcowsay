@@ -13,6 +13,7 @@
 #include "csi.hpp"
 #include "options.hpp"
 #include "vroot.h"
+#include "logger.hpp"
 
 namespace xcowsay {
 
