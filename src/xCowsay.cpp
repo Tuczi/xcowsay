@@ -28,12 +28,19 @@ bool XCowsay::tryReadLine(FILE *file, std::string &buffer) {
 
 void XCowsay::draw() {
   while (true) {
+    int screen = DefaultScreen(display);
+    //TODO need to reset it here so XClearWindow can use it. Not sure why window attribute is not stored. Maybe because of XFlush 
+    XSetWindowBackground(display, window, BlackPixel(display, screen));
+
     XClearWindow(display, window);
 
     //TODO handle partially displayed frames
     drawFrame();
 
-    XFlush(display);
+    XFlush(display); //TODO XFlush or something else?
+
+    //TODO what to do with xlib events? do the program need to handle them somehow? discard them?
+
     sleep(options.delay);
   }
 

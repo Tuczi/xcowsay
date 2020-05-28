@@ -32,6 +32,7 @@ Window XCowsayFactory::getRootWindow(Display *display, const Options &options) {
     }
   }
 
+  syslog(LOG_INFO, "Cannot get root window from env. $XSCREENSAVER_WINDOW env is \"%s\". Using fallback", getenv("XSCREENSAVER_WINDOW"));
   //Fallback vroot.h
   return DefaultRootWindow(display);
 }
@@ -40,7 +41,26 @@ Display *XCowsayFactory::getOpenXServerDisplay() {
   return XOpenDisplay(getenv("DISPLAY"));
 }
 
+int xErrorHandler(Display* display, XErrorEvent* e) {
+  char msg[50];
+  XGetErrorText(display, e->error_code, msg, sizeof(msg));
+
+  syslog(LOG_ERR, "Xlib error %d: \"%s\". Request code %d. Minor code %d",
+         e->error_code, msg, e->request_code, e->minor_code);
+
+  return 0;
+}
+
+int xIoErrorHandler(Display*) {
+  syslog(LOG_ERR, "Xlib io error");
+
+  return 0;
+}
+
 XCowsay XCowsayFactory::fromOptions(const Options &options) {
+  XSetErrorHandler(xErrorHandler);
+  XSetIOErrorHandler(xIoErrorHandler);
+
   Display *display = getOpenXServerDisplay();
   if (display == nullptr) {
     syslog(LOG_ERR, "Cannot open XServer display. $DISPLAY env is \"%s\"", getenv("DISPLAY"));
@@ -49,7 +69,7 @@ XCowsay XCowsayFactory::fromOptions(const Options &options) {
 
   Window root = getRootWindow(display, options);
   if (root == 0) {
-    syslog(LOG_ERR, "Cannot get root window. $XSCREENSAVER_WINDOW env is \"%s\"", getenv("XSCREENSAVER_WINDOW"));
+    syslog(LOG_ERR, "Cannot get root window.");
     exit(EXIT_FAILURE);
   }
 

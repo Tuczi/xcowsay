@@ -19,6 +19,9 @@ class XCowsayFactory {
   static xcowsay::XCowsay fromOptions(const xcowsay::Options &);
 };
 
+int xErrorHandler(Display*, XErrorEvent*);
+int xIoErrorHandler(Display*);
+
 }
 
 #endif //XCOWSAY_XCOWSAYFACTORY_HPP
