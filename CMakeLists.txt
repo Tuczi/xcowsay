@@ -22,11 +22,11 @@ add_executable(xcowsay
         src/vroot.h
         src/optionsFactory.cpp
         src/optionsFactory.hpp
-        src/csiColors.hpp
-        src/csi.hpp
-        src/csiParserException.hpp
-        src/csiParser.cpp
-        src/csiParser.hpp
+        src/ansi-esc-parser/csiColors.hpp
+        src/ansi-esc-parser/csi.hpp
+        src/ansi-esc-parser/csiParserException.hpp
+        src/ansi-esc-parser/csiParser.cpp
+        src/ansi-esc-parser/csiParser.hpp
         src/main.cpp
         src/main.hpp
         src/xCowsay.cpp

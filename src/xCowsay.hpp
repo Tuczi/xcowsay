@@ -10,7 +10,7 @@
 #include <X11/Xlib.h>
 #include <unistd.h>
 
-#include "csi.hpp"
+#include "ansi-esc-parser/csiParser.hpp"
 #include "options.hpp"
 #include "vroot.h"
 #include "logger.hpp"

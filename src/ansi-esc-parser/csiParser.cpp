@@ -77,9 +77,10 @@ uint32_t CsiParser::readCsiInt() {
  *
  * If partially parsed CSI is returned then buffer is rewind to the end of last fully read code position.
 **/
-Csi CsiParser::parseCsiSequence(Csi csi) {
+Csi CsiParser::parseCsiSequence() {
+  Csi& csi = currentFragment.color;
   while (true) {
-    std::string_view oryginalBuffer = buffer;
+    std::string_view originalBuffer = buffer;
     try {
       csi = parseCsiSubsequence(csi);
 
@@ -99,13 +100,14 @@ Csi CsiParser::parseCsiSequence(Csi csi) {
       buffer.remove_prefix(1);
     } catch (PartialCsiSequenceException &e) {
       partialCsiSequenceBuffer = CSI_START_SEQUENCE;
-      partialCsiSequenceBuffer += oryginalBuffer;
+      partialCsiSequenceBuffer += originalBuffer;
       buffer = {};
       return csi;
     }
   }
 }
-Csi &CsiParser::parseCsiSubsequence(Csi &csi) {
+
+Csi& CsiParser::parseCsiSubsequence(Csi &csi) {
   auto code = readCsiInt();
   if (code == 0) {
     csi = Csi();
@@ -157,7 +159,7 @@ void CsiParser::parseNextFragment() {
   if (buffer[escapePosition + 1] == CSI_OPEN_BRACKET) { // buffer has CSI start sequence
     if (escapePosition == 0) { // buffer starts with CSI start sequence
       buffer.remove_prefix(2);
-      auto color = parseCsiSequence(currentFragment.color);
+      auto color = parseCsiSequence();
       currentFragment = CsiStringFragment(color, {});
 
       return;
@@ -170,21 +172,20 @@ void CsiParser::parseNextFragment() {
     return;
   }
 
-  // buffer has just a ESC character without corresponding '['
+  // buffer has just a ESC character without corresponding '['.
+  // its unsupported ESC sequence. Display it as normal text.
   currentFragment = CsiStringFragment(currentFragment.color, buffer.substr(escapePosition + 1));
   buffer.remove_prefix(escapePosition + 1);
 }
-/**
-* returns:
-*   true if has next fragment to pare (buffer has not been fully read)
-*   false otherwise
-**/
+
 bool CsiParser::hasNextFragment() {
   return !buffer.empty();
 }
+
 CsiStringFragment CsiParser::getCurrentStringFragment() {
   return currentFragment;
 }
+
 void CsiParser::moveBuffer(std::string &&stringBuffer) {
   originalStringBuffer = std::move(stringBuffer);
   buffer = originalStringBuffer;

@@ -3,7 +3,6 @@
 //
 
 #include "xCowsay.hpp"
-#include "csiParser.hpp"
 
 namespace xcowsay {
 
@@ -28,6 +27,7 @@ bool XCowsay::tryReadLine(FILE *file, std::string &buffer) {
 
 void XCowsay::draw() {
   while (true) {
+
     int screen = DefaultScreen(display);
     //TODO need to reset it here so XClearWindow can use it. Not sure why window attribute is not stored. Maybe because of XFlush 
     XSetWindowBackground(display, window, BlackPixel(display, screen));
@@ -53,6 +53,7 @@ void XCowsay::draw() {
  *   false otherwise
  **/
 bool XCowsay::drawFrame() {
+  //TODO think if double buffering is needed
   FILE *pipe = popen(options.cmd.c_str(), "r");
   if (pipe == nullptr) {
     syslog(LOG_ERR, "Cannot open pipe. Pipe is \"%s\"", options.cmd.c_str());
@@ -72,7 +73,7 @@ bool XCowsay::drawFrame() {
       std::string buffer(BUF_SIZE, '\0');//TODO use screen width as buffer size or config param
       endOfPipe = !tryReadLine(pipe, buffer);
       if (endOfPipe) {
-        //TODO print the rest of buffer in parser
+        //TODO print the rest of buffer in ansi-esc-parser
         endOfPipe = true;
         break;
       }
