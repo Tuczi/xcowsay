@@ -6,6 +6,10 @@
           _label="Delay in seconds"
           low="1" high="100" default="6"/>
 
+  <number id="randomize" type="spinbutton" arg="-r %"
+          _label="Randomize starting position"
+          low="0" high="1" default="1"/>
+
   <string id="cmd" arg="-c %"
           _label="Command to execute"/>
 

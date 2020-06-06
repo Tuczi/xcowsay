@@ -61,6 +61,7 @@ cp xscreen-config/xcowsay.desktop /usr/share/applications/screensavers/xcowsay.d
 Following params can be configured in screensaver settings GUI:
 * `-d` delay - delay to next command execution in seconds
 * `-c` comamnd - command to be executed
+* `-r` randomize - randomize starting position of the output
 * `-f` font - (advenced) font to be used to display the output of the command. Use [X logical font description (XLFD)](https://en.wikipedia.org/wiki/X_logical_font_description) format to specify the font e.g. `-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*`.
   *Use `xlsfonts` command to list avaliable fonts*
 

@@ -17,6 +17,26 @@
 
 namespace xcowsay {
 
+/**
+ * Stores cursor position in Pixels
+ */
+class CursorPosition {
+ private:
+  XFontStruct *fontStruct;
+
+  CursorPosition(uint startXPosition_, uint startYPosition, XFontStruct *fontStruct_)
+      : fontStruct(fontStruct_), beginningOfNewline(startXPosition_), x(startXPosition_), y(startYPosition) {}
+
+ public:
+  uint beginningOfNewline;
+  uint x;
+  uint y;
+
+  static CursorPosition fromOptions(const Options &options,
+                                    const XWindowAttributes &windowAttributes,
+                                    XFontStruct *fontStruct);
+};
+
 class XCowsay {
  private:
   static const size_t BUF_SIZE = 1024;
@@ -27,9 +47,13 @@ class XCowsay {
   GC gc;
   XFontStruct *fontStruct;
   Options options;
+  CursorPosition cursorPosition;
 
   static bool tryReadLine(FILE *, std::string &);
   bool drawFrame();
+  void clearDisplay(const ClearDisplay &, const uint lineHeight);
+  void setCursorPosition(const SetCursorPosition &, const uint);
+  void displayText(const std::string_view &, const uint);
 
  public:
   XCowsay(Display *display_,
@@ -43,7 +67,8 @@ class XCowsay {
         windowAttributes(windowAttributes_),
         gc(gc_),
         fontStruct(fontStruct_),
-        options(options_) {}
+        options(options_),
+        cursorPosition(CursorPosition::fromOptions(options, windowAttributes, fontStruct)) {}
 
   void draw();
 };

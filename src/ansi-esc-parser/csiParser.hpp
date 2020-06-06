@@ -12,7 +12,6 @@ namespace xcowsay {
 static const char ESC_CHAR = '\x1B';
 static const char CSI_OPEN_BRACKET = '[';
 static const char CSI_SEPARATOR = ';';
-static const char CSI_END = 'm';
 static const std::string CSI_START_SEQUENCE = "\x1B[";
 
 /**
@@ -87,26 +86,32 @@ static const std::string CSI_START_SEQUENCE = "\x1B[";
  * parser.moveBuffer(std::move(buffer));
  * while (parser.hasNextFragment()) {
  *   parser.parseNextFragment();
- *   auto stringFragment = parser.getCurrentStringFragment();
+ *   auto stringFragment = parser.getCurrentAction();
  * }
  */
 class CsiParser {
  private:
-  CsiStringFragment currentFragment = xcowsay::CsiStringFragment(xcowsay::Csi(), {});
+  CsiStringFragment currentFragment;
   // holds original buffer value to satisfy string_view memory management
   std::string originalStringBuffer;
   std::string_view buffer;
   std::string partialCsiSequenceBuffer;
 
+  inline bool isCsiEndChar(char c);
+  char getCsiType();
+
   uint32_t getExtendedColor();
-  xcowsay::Csi parseCsiSequence();
-  uint32_t readCsiInt();
-  Csi& parseCsiSubsequence(xcowsay::Csi &csi);
+  uint32_t readCsiInt(int=0);
+  CsiStringFragment parseCsiSequence();
+  GraphicRendition& parseSGRSubsequence(GraphicRendition&);
+  SetCursorPosition parseCursorMove();
+  ClearDisplay parseDisplayClear();
+  GraphicRendition parseGraphicAttributes();
 
  public:
-  void moveBuffer(std::string &&);
+  void moveBuffer(std::string&&);
   bool hasNextFragment();
-  CsiStringFragment getCurrentStringFragment();
+  Action getCurrentAction();
   void parseNextFragment();
 };
 }

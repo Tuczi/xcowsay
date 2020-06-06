@@ -27,10 +27,9 @@ bool XCowsay::tryReadLine(FILE *file, std::string &buffer) {
 
 void XCowsay::draw() {
   while (true) {
-
     int screen = DefaultScreen(display);
-    //TODO need to reset it here so XClearWindow can use it. Not sure why window attribute is not stored. Maybe because of XFlush 
     XSetWindowBackground(display, window, BlackPixel(display, screen));
+    XSetForeground(display, gc, WhitePixel(display, screen));
 
     XClearWindow(display, window);
 
@@ -38,7 +37,6 @@ void XCowsay::draw() {
     drawFrame();
 
     XFlush(display); //TODO XFlush or something else?
-
     //TODO what to do with xlib events? do the program need to handle them somehow? discard them?
 
     sleep(options.delay);
@@ -60,51 +58,136 @@ bool XCowsay::drawFrame() {
     return false;
   }
 
-  const int lineHeight = fontStruct->ascent + fontStruct->descent;
-  int positionX = random() % (windowAttributes.width / 2);
-  int positionY = random() % (windowAttributes.height / 2) + 10;
+  cursorPosition = CursorPosition::fromOptions(options, windowAttributes, fontStruct);
+  const uint lineHeight = fontStruct->ascent + fontStruct->descent;
 
   CsiParser parser;
   bool endOfPipe;
   do { //TODO refactor nested loops
-    bool fullLineRead;
-    int positionXTmp = positionX;
-    do {
-      std::string buffer(BUF_SIZE, '\0');//TODO use screen width as buffer size or config param
-      endOfPipe = !tryReadLine(pipe, buffer);
-      if (endOfPipe) {
-        //TODO print the rest of buffer in ansi-esc-parser
-        endOfPipe = true;
-        break;
+    std::string buffer(BUF_SIZE, '\0');//TODO use screen width as buffer size or config param
+    endOfPipe = !tryReadLine(pipe, buffer);
+
+    if (endOfPipe) {
+      //TODO print the rest of buffer in ansi-esc-parser
+      break;
+    }
+
+    const bool fullLineRead = (buffer.back() == '\n');
+    if (fullLineRead) {
+      buffer.resize(buffer.size() - 1);
+    }
+
+    parser.moveBuffer(std::move(buffer));
+    while (parser.hasNextFragment()) {
+      parser.parseNextFragment();
+      const auto action = parser.getCurrentAction();
+
+      switch(action.type) {
+        case UPDATE_GRAPHIC_ATTRIBUTES:
+          //TODO add stringFragment.color.bg_color support
+          //TODO add stringFragment.color.bold support
+          XSetForeground(display, gc, action.color.fg_color);
+          //XSetBackground(display, gc, action.color.bg_color);
+          break;
+
+        case DISPLAY_TEXT:
+          displayText(action.displayText, lineHeight);
+          break;
+
+        case CLEAR_DISPLAY:
+          clearDisplay(action.clearDisplay, lineHeight);
+          break;
+
+        case SET_CURSOR_POSITION:
+          setCursorPosition(action.setCursorPosition, lineHeight);
+          break;
+
+        default:
+          syslog(LOG_ERR, "Unhandled action of type: %d", action.type);
       }
-      fullLineRead = (buffer.back() == '\n');
-      if (fullLineRead) {
-        buffer.resize(buffer.size() - 1);
-      }
-
-      parser.moveBuffer(std::move(buffer));
-      while (parser.hasNextFragment()) {
-        parser.parseNextFragment();
-        auto stringFragment = parser.getCurrentStringFragment();
-
-        XSetForeground(display, gc, stringFragment.color.fg_color);
-        XDrawString(display,
-                    window,
-                    gc,
-                    positionXTmp,
-                    positionY,
-                    stringFragment.str.data(),
-                    stringFragment.str.size());
-
-        positionXTmp += XTextWidth(fontStruct, stringFragment.str.data(), stringFragment.str.size());
-      }
-    } while (!fullLineRead);
-
-    positionY += lineHeight;
+    }
+    if (fullLineRead) {
+      cursorPosition.y += lineHeight;
+      cursorPosition.x = cursorPosition.beginningOfNewline;
+    }
   } while (!endOfPipe);
 
   pclose(pipe);
   return true;
 }
 
+void XCowsay::displayText(const std::string_view& str, const uint lineHeight) {
+  const int stringDisplayWidth = XTextWidth(fontStruct, str.data(), str.size());
+  XClearArea(display,
+             window,
+             cursorPosition.x,
+             cursorPosition.y - fontStruct->ascent,
+             stringDisplayWidth,
+             lineHeight,
+             false);
+  XDrawString(display, window, gc, cursorPosition.x, cursorPosition.y, str.data(), str.size());
+  XFlush(display);
+  cursorPosition.x += stringDisplayWidth;
+}
+
+void XCowsay::setCursorPosition(const SetCursorPosition &setCursorPosition, const uint lineHeight) {
+  cursorPosition.x = (setCursorPosition.column - 1) * XTextWidth(fontStruct, " ", 1);
+  cursorPosition.y = (setCursorPosition.line - 1) * lineHeight + fontStruct->ascent;
+}
+
+void XCowsay::clearDisplay(const ClearDisplay &clearDisplay, const uint lineHeight) {
+  switch (clearDisplay.mode) {
+    case 0: //clear from cursor to end of screen.
+      //clear till the end of line
+      XClearArea(display,
+                 window,
+                 cursorPosition.x,
+                 cursorPosition.y - fontStruct->ascent,
+                 -1,
+                 lineHeight,
+                 false);
+      //clear rest of the screen
+      XClearArea(display,
+                 window,
+                 0,
+                 cursorPosition.y - fontStruct->ascent + lineHeight,
+                 -1,
+                 -1,
+                 false);
+      break;
+    case 1: //clear from cursor to beginning of the screen
+      //clear till the beginning of line
+      XClearArea(display,
+                 window,
+                 0,
+                 cursorPosition.y - fontStruct->ascent,
+                 cursorPosition.x,
+                 lineHeight,
+                 false);
+      //clear rest of the screen
+      XClearArea(display,
+                 window,
+                 0,
+                 0,
+                 -1,
+                 cursorPosition.y - fontStruct->ascent,
+                 false);
+      break;
+    default: //clear entire display (mode 2 and 3)
+      XClearWindow(display, window);
+  }
+}
+
+CursorPosition CursorPosition::fromOptions(const Options &options,
+                                           const XWindowAttributes &windowAttributes,
+                                           XFontStruct *fontStruct) {
+  uint positionX = options.randomize
+                   ? random() % (windowAttributes.width / 2)
+                   : 0;
+  uint positionY = options.randomize
+                   ? random() % (windowAttributes.height / 2) + fontStruct->ascent
+                   : fontStruct->ascent;
+
+  return CursorPosition(positionX, positionY, fontStruct);
+}
 }

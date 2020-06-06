@@ -9,6 +9,7 @@ const struct option OptionsFactory::longopts[] = {
     {"cmd", required_argument, nullptr, 'c'},
     {"delay", required_argument, nullptr, 'd'},
     {"font", required_argument, nullptr, 'f'},
+    {"randomize", no_argument, nullptr, 'r'},
     {"debug", no_argument, nullptr, 'D'},
     {nullptr, no_argument, nullptr, '\0'},
 };
@@ -22,7 +23,7 @@ Options OptionsFactory::fromArgs(int argc, char *argv[]) {
   opterr = 1;
 
   while (iarg != -1) {
-    iarg = getopt_long(argc, argv, "d:c:f:D", longopts, &index);
+    iarg = getopt_long(argc, argv, "d:c:f:rD", longopts, &index);
     switch (iarg) {
       case 'd': options.delay = atoi(optarg);
         break;
@@ -31,6 +32,9 @@ Options OptionsFactory::fromArgs(int argc, char *argv[]) {
         break;
 
       case 'f': options.font = optarg;
+        break;
+
+      case 'r': options.randomize = true;
         break;
 
       case 'D': options.debug = true;

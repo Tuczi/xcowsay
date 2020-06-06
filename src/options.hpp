@@ -13,6 +13,7 @@ struct Options {
   int delay;
   std::string cmd;
   std::string font;
+  bool randomize = false;
 
   bool debug = false;
 };

@@ -11,13 +11,13 @@ class CsiParserException : public std::exception {
 };
 
 class IncorrectCsiSequenceException : CsiParserException {
-  const char *what() const throw() {
+  const char* what() const throw() {
     return "Incorrect CSI sequence";
   }
 };
 
 class PartialCsiSequenceException : CsiParserException {
-  const char *what() const throw() {
+  const char* what() const throw() {
     return "Partial CSI sequence";
   }
 };

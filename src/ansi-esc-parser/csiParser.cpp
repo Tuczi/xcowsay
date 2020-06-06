@@ -43,16 +43,20 @@ uint32_t CsiParser::getExtendedColor() {
  *  valid CSI code if success
  * 	otherwise throws CsiParserException
 **/
-uint32_t CsiParser::readCsiInt() {
-  int csiCodeCandidate;
-  auto[end, ec] = std::from_chars(buffer.data(), buffer.data() + buffer.size(), csiCodeCandidate);
+uint32_t CsiParser::readCsiInt(int defaultValue) {
+  int csiCodeCandidate = defaultValue;
 
+  if(isCsiEndChar(buffer.front())) {
+    return csiCodeCandidate;
+  }
+
+  auto[end, ec] = std::from_chars(buffer.data(), buffer.data() + buffer.size(), csiCodeCandidate);
   if (ec != std::errc()) {
     throw IncorrectCsiSequenceException();
   }
 
   // full code has been read
-  if ((*end == CSI_SEPARATOR) || (*end == CSI_END)) {
+  if ((*end == CSI_SEPARATOR) || isCsiEndChar(*end)) {
     buffer.remove_prefix(end - buffer.data());
     return csiCodeCandidate;
   }
@@ -67,6 +71,20 @@ uint32_t CsiParser::readCsiInt() {
 
   throw IncorrectCsiSequenceException();
 }
+
+bool CsiParser::isCsiEndChar(char c) {
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+char CsiParser::getCsiType() {
+  for (char c : buffer) {
+    if (isCsiEndChar(c)) {
+      return c;
+    }
+  }
+
+  return '\0';
+}
 /**
  * Returns parsed CSI or partially parsed CSI code.
  * Internal buffer is maintained.
@@ -77,18 +95,80 @@ uint32_t CsiParser::readCsiInt() {
  *
  * If partially parsed CSI is returned then buffer is rewind to the end of last fully read code position.
 **/
-Csi CsiParser::parseCsiSequence() {
-  Csi& csi = currentFragment.color;
+CsiStringFragment CsiParser::parseCsiSequence() {
+  char type = getCsiType();
+  if (type == '\0') { // partial sequence - need to read more
+    partialCsiSequenceBuffer = CSI_START_SEQUENCE;
+    partialCsiSequenceBuffer += buffer;
+    buffer = {};
+    return currentFragment.withKeptColor();
+  } else if (type == 'H') { // move cursor
+    auto cursorPosition = parseCursorMove();
+    return currentFragment.withAction(Action(cursorPosition));
+  } else if (type == 'J') { // clear display
+    auto clearDisplay = parseDisplayClear();
+    return currentFragment.withAction(Action(clearDisplay));
+  } else if (type == 'm') { // change graphic attribute
+    auto graphicAttributes = parseGraphicAttributes();
+    return CsiStringFragment(graphicAttributes);
+  } else {
+    //TODO unsupported CSI type
+    return currentFragment.withKeptColor();
+  }
+}
+
+//TODO
+SetCursorPosition CsiParser::parseCursorMove() {
+  uint column = readCsiInt(1);
+  uint line = 1;
+
+  if (buffer.front() == CSI_SEPARATOR) {
+    buffer.remove_prefix(1);
+    line = readCsiInt(1);
+  }
+
+  if (!isCsiEndChar(buffer.front())) { // TODO compare exact char
+    buffer.remove_prefix(1);
+    throw IncorrectCsiSequenceException();
+  }
+
+  if (column <= 0 || line <= 0) {
+    throw IncorrectCsiSequenceException();
+  }
+
+  buffer.remove_prefix(1);
+  return SetCursorPosition(column, line);
+}
+
+ClearDisplay CsiParser::parseDisplayClear() {
+  uint mode = readCsiInt();
+
+  if (mode > 3) {
+    throw IncorrectCsiSequenceException();
+  }
+
+  if (!isCsiEndChar(buffer.front())) { // TODO compare exact char
+    buffer.remove_prefix(1);
+    throw IncorrectCsiSequenceException();
+  }
+
+  buffer.remove_prefix(1);
+  return ClearDisplay(mode);
+}
+
+GraphicRendition CsiParser::parseGraphicAttributes() {
+  GraphicRendition &csi = currentFragment.color;
+  //TODO now partial sequence is impossible
   while (true) {
     std::string_view originalBuffer = buffer;
     try {
-      csi = parseCsiSubsequence(csi);
+      csi = parseSGRSubsequence(csi);
 
       if (buffer.front() == '\0') {
         throw PartialCsiSequenceException();
       }
 
-      if (buffer.front() == CSI_END) {
+      if (isCsiEndChar(buffer.front())) {//TODO check if 'm'
         buffer.remove_prefix(1);
         return csi;
       }
@@ -107,10 +187,10 @@ Csi CsiParser::parseCsiSequence() {
   }
 }
 
-Csi& CsiParser::parseCsiSubsequence(Csi &csi) {
+GraphicRendition &CsiParser::parseSGRSubsequence(GraphicRendition &csi) {
   auto code = readCsiInt();
   if (code == 0) {
-    csi = Csi();
+    csi = GraphicRendition();
   } else if (code == 1) {
     csi.bold = true;
   } else if (code >= 30 && code <= 37) {
@@ -120,7 +200,7 @@ Csi& CsiParser::parseCsiSubsequence(Csi &csi) {
     //TODO validate if does not end with 'm'
     csi.fg_color = getExtendedColor();
   } else if (code == 39) {
-    csi.fg_color = Csi().fg_color;
+    csi.fg_color = GraphicRendition().fg_color;
   } else if (code >= 40 && code <= 47) {
     csi.bg_color = CSI_COLORS_MAP[code - 40];
   } else if (code == 48) {
@@ -128,11 +208,12 @@ Csi& CsiParser::parseCsiSubsequence(Csi &csi) {
     //TODO validate if does not end with 'm'
     csi.bg_color = getExtendedColor();
   } else if (code == 49) {
-    csi.bg_color = Csi().bg_color;
+    csi.bg_color = GraphicRendition().bg_color;
   }
 
   return csi;
 }
+
 void CsiParser::parseNextFragment() {
   if (!partialCsiSequenceBuffer.empty()) {
     partialCsiSequenceBuffer += buffer;
@@ -141,7 +222,7 @@ void CsiParser::parseNextFragment() {
 
   size_t escapePosition = buffer.find(ESC_CHAR);
   if (escapePosition == std::string::npos) { // buffer is simple string
-    currentFragment = CsiStringFragment(currentFragment.color, buffer);
+    currentFragment = currentFragment.withBuffer(buffer);
 
     buffer = {};
     return;
@@ -151,7 +232,7 @@ void CsiParser::parseNextFragment() {
   if (escapePosition >= buffer.length()) {
     //TODO check condition
     partialCsiSequenceBuffer = ESC_CHAR;
-    currentFragment = CsiStringFragment(currentFragment.color, buffer.substr(buffer.length() - 1));
+    currentFragment = currentFragment.withBuffer(buffer.substr(buffer.length() - 1));
     buffer = {};
     return;
   }
@@ -159,14 +240,13 @@ void CsiParser::parseNextFragment() {
   if (buffer[escapePosition + 1] == CSI_OPEN_BRACKET) { // buffer has CSI start sequence
     if (escapePosition == 0) { // buffer starts with CSI start sequence
       buffer.remove_prefix(2);
-      auto color = parseCsiSequence();
-      currentFragment = CsiStringFragment(color, {});
+      currentFragment = parseCsiSequence();
 
       return;
     }
 
     // there is some text before CSI start sequence
-    currentFragment = CsiStringFragment(currentFragment.color, buffer.substr(0, escapePosition));
+    currentFragment = currentFragment.withBuffer(buffer.substr(0, escapePosition));
     buffer.remove_prefix(escapePosition);
 
     return;
@@ -174,7 +254,7 @@ void CsiParser::parseNextFragment() {
 
   // buffer has just a ESC character without corresponding '['.
   // its unsupported ESC sequence. Display it as normal text.
-  currentFragment = CsiStringFragment(currentFragment.color, buffer.substr(escapePosition + 1));
+  currentFragment = currentFragment.withBuffer(buffer.substr(escapePosition + 1));
   buffer.remove_prefix(escapePosition + 1);
 }
 
@@ -182,8 +262,8 @@ bool CsiParser::hasNextFragment() {
   return !buffer.empty();
 }
 
-CsiStringFragment CsiParser::getCurrentStringFragment() {
-  return currentFragment;
+Action CsiParser::getCurrentAction() {
+  return currentFragment.action;
 }
 
 void CsiParser::moveBuffer(std::string &&stringBuffer) {
