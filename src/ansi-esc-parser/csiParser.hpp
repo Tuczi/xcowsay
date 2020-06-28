@@ -102,10 +102,10 @@ class CsiParser {
 
   uint32_t getExtendedColor();
   uint32_t readCsiInt(int=0);
+  uint parseSingleIntCsiSequence();
   CsiStringFragment parseCsiSequence();
   GraphicRendition& parseSGRSubsequence(GraphicRendition&);
-  SetCursorPosition parseCursorMove();
-  ClearDisplay parseDisplayClear();
+  ChangeCursorPosition parseCursorMove();
   GraphicRendition parseGraphicAttributes();
 
  public:

@@ -2,6 +2,7 @@
 // Created by tk on 15/03/2020.
 //
 
+#include <iostream>
 #include "csiParser.hpp"
 #include "csiParserException.hpp"
 
@@ -73,9 +74,13 @@ uint32_t CsiParser::readCsiInt(int defaultValue) {
 }
 
 bool CsiParser::isCsiEndChar(char c) {
-  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+  return c >= 0x40 && c <= 0x7E;
 }
 
+/**
+ * Return end char of the CSI sequence
+ * @return
+ */
 char CsiParser::getCsiType() {
   for (char c : buffer) {
     if (isCsiEndChar(c)) {
@@ -85,6 +90,7 @@ char CsiParser::getCsiType() {
 
   return '\0';
 }
+
 /**
  * Returns parsed CSI or partially parsed CSI code.
  * Internal buffer is maintained.
@@ -94,6 +100,8 @@ char CsiParser::getCsiType() {
  * 2. Method is not able to read extended colors codes e.g. buffer contains "38;2;2" instead of "38;2;201;" or "38;2;202;"
  *
  * If partially parsed CSI is returned then buffer is rewind to the end of last fully read code position.
+ *
+ * https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 **/
 CsiStringFragment CsiParser::parseCsiSequence() {
   char type = getCsiType();
@@ -102,23 +110,51 @@ CsiStringFragment CsiParser::parseCsiSequence() {
     partialCsiSequenceBuffer += buffer;
     buffer = {};
     return currentFragment.withKeptColor();
+  } else if (type >= 'A' && type <= 'D') {
+    //printf("Move cursor +- not implemented\n");//TODO
+    buffer.remove_prefix(buffer.find(type)+1);
+  } else if (type == 'E' || type == 'F') {
+    //printf("Move cursor +- lines - not implemented\n");//TODO
+    buffer.remove_prefix(buffer.find(type)+1);
+  } else if (type == 'G') {
+    return currentFragment.withAction(Action(ChangeCursorPosition(parseSingleIntCsiSequence(), 0)));
   } else if (type == 'H') { // move cursor
-    auto cursorPosition = parseCursorMove();
-    return currentFragment.withAction(Action(cursorPosition));
+    return currentFragment.withAction(Action(parseCursorMove()));
   } else if (type == 'J') { // clear display
-    auto clearDisplay = parseDisplayClear();
-    return currentFragment.withAction(Action(clearDisplay));
+    return currentFragment.withAction(Action(CLEAR_DISPLAY, parseSingleIntCsiSequence()));//TODO validate if value < 3
+  } else if (type == 'K') { // clear line
+    return currentFragment.withAction(Action(CLEAR_LINE, parseSingleIntCsiSequence()));//TODO validate if value < 3
+  } else if (type == 'P') { // Delete Character
+    return currentFragment.withAction(Action(DELETE_CHAR, parseSingleIntCsiSequence()));
+    //TODO looks like need to implement XCopyArea and/or memorize printed buffers
+  } else if (type == 'd') { // Delete Character
+    return currentFragment.withAction(Action(ChangeCursorPosition(0, parseSingleIntCsiSequence())));
   } else if (type == 'm') { // change graphic attribute
-    auto graphicAttributes = parseGraphicAttributes();
-    return CsiStringFragment(graphicAttributes);
+    return CsiStringFragment(parseGraphicAttributes());
   } else {
     //TODO unsupported CSI type
-    return currentFragment.withKeptColor();
+    const size_t pos = buffer.find(type);
+    buffer.remove_prefix(pos+1);
   }
+
+  return currentFragment.withKeptColor();
+}
+
+
+uint CsiParser::parseSingleIntCsiSequence() {
+  uint value = readCsiInt(1);
+
+  if (!isCsiEndChar(buffer.front())) {
+    buffer.remove_prefix(1);
+    throw IncorrectCsiSequenceException();
+  }
+
+  buffer.remove_prefix(1);
+  return value;
 }
 
 //TODO
-SetCursorPosition CsiParser::parseCursorMove() {
+ChangeCursorPosition CsiParser::parseCursorMove() {
   uint column = readCsiInt(1);
   uint line = 1;
 
@@ -132,28 +168,8 @@ SetCursorPosition CsiParser::parseCursorMove() {
     throw IncorrectCsiSequenceException();
   }
 
-  if (column <= 0 || line <= 0) {
-    throw IncorrectCsiSequenceException();
-  }
-
   buffer.remove_prefix(1);
-  return SetCursorPosition(column, line);
-}
-
-ClearDisplay CsiParser::parseDisplayClear() {
-  uint mode = readCsiInt();
-
-  if (mode > 3) {
-    throw IncorrectCsiSequenceException();
-  }
-
-  if (!isCsiEndChar(buffer.front())) { // TODO compare exact char
-    buffer.remove_prefix(1);
-    throw IncorrectCsiSequenceException();
-  }
-
-  buffer.remove_prefix(1);
-  return ClearDisplay(mode);
+  return ChangeCursorPosition(column, line);
 }
 
 GraphicRendition CsiParser::parseGraphicAttributes() {

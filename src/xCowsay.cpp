@@ -95,11 +95,18 @@ bool XCowsay::drawFrame() {
           break;
 
         case CLEAR_DISPLAY:
-          clearDisplay(action.clearDisplay, lineHeight);
+          clearDisplay(action.singleIntCsi, lineHeight);
           break;
 
+        case CLEAR_LINE:
+          clearLine(action.singleIntCsi, lineHeight);
+          break;
+
+        case DELETE_CHAR:
+          deleteChar(action.singleIntCsi, lineHeight);
+
         case SET_CURSOR_POSITION:
-          setCursorPosition(action.setCursorPosition, lineHeight);
+          setCursorPosition(action.cursorPosition, lineHeight);
           break;
 
         default:
@@ -130,13 +137,17 @@ void XCowsay::displayText(const std::string_view& str, const uint lineHeight) {
   cursorPosition.x += stringDisplayWidth;
 }
 
-void XCowsay::setCursorPosition(const SetCursorPosition &setCursorPosition, const uint lineHeight) {
-  cursorPosition.x = (setCursorPosition.column - 1) * XTextWidth(fontStruct, " ", 1);
-  cursorPosition.y = (setCursorPosition.line - 1) * lineHeight + fontStruct->ascent;
+void XCowsay::setCursorPosition(const ChangeCursorPosition &setCursorPosition, const uint lineHeight) {
+  if(setCursorPosition.column) {
+    cursorPosition.x = (setCursorPosition.column - 1) * XTextWidth(fontStruct, " ", 1);
+  }
+  if(setCursorPosition.line) {
+    cursorPosition.y = (setCursorPosition.line - 1) * lineHeight + fontStruct->ascent;
+  }
 }
 
-void XCowsay::clearDisplay(const ClearDisplay &clearDisplay, const uint lineHeight) {
-  switch (clearDisplay.mode) {
+void XCowsay::clearDisplay(const uint mode, const uint lineHeight) {
+  switch (mode) {
     case 0: //clear from cursor to end of screen.
       //clear till the end of line
       XClearArea(display,
@@ -176,6 +187,53 @@ void XCowsay::clearDisplay(const ClearDisplay &clearDisplay, const uint lineHeig
     default: //clear entire display (mode 2 and 3)
       XClearWindow(display, window);
   }
+}
+
+void XCowsay::clearLine(const uint mode, const uint lineHeight) {
+  //TODO test
+  switch (mode) {
+    case 0: //clear till the end of line
+      XClearArea(display,
+                 window,
+                 cursorPosition.x,
+                 cursorPosition.y - fontStruct->ascent,
+                 -1,
+                 lineHeight,
+                 false);
+      break;
+    case 1: //clear till the beginning of line
+      XClearArea(display,
+                 window,
+                 0,
+                 cursorPosition.y - fontStruct->ascent,
+                 cursorPosition.x,
+                 lineHeight,
+                 false);
+      break;
+    default: //clear entire line (mode 2 and 3)
+      XClearArea(display,
+                 window,
+                 0,
+                 cursorPosition.y - fontStruct->ascent,
+                 -1,
+                 lineHeight,
+                 false);
+  }
+}
+
+void XCowsay::deleteChar(const uint count, const uint lineHeight) {
+  //TODO test and check if this is sufficient
+  //copy line from current position + n characters into current position
+  XCopyArea(display,
+            window,
+            window,
+            gc,
+            cursorPosition.x + count * XTextWidth(fontStruct, " ", 1),
+            cursorPosition.y - fontStruct->ascent,
+            -1,
+            lineHeight,
+            cursorPosition.x,
+            cursorPosition.y - fontStruct->ascent);
 }
 
 CursorPosition CursorPosition::fromOptions(const Options &options,

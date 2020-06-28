@@ -21,34 +21,28 @@ struct GraphicRendition {
   GraphicRendition(uint32_t fg_color_, uint32_t bg_color_) : bold(false), fg_color(fg_color_), bg_color(bg_color_) {}
 };
 
-struct SetCursorPosition {
-  uint column;
-  uint line;
+struct ChangeCursorPosition {
+  uint column; // 0 means don't change column
+  uint line; // 0 means don't change line
 
-  SetCursorPosition(int column_, int line_) : column(column_), line(line_) {}
+  ChangeCursorPosition(int column_, int line_) : column(column_), line(line_) {}
 };
 
-struct ClearDisplay {
-  uint mode;
-
-  ClearDisplay(int mode_) : mode(mode_) {}
-};
-
-enum ActionType { DISPLAY_TEXT, UPDATE_GRAPHIC_ATTRIBUTES, CLEAR_DISPLAY, SET_CURSOR_POSITION };
+enum ActionType { DISPLAY_TEXT, UPDATE_GRAPHIC_ATTRIBUTES, CLEAR_DISPLAY, CLEAR_LINE, DELETE_CHAR, SET_CURSOR_POSITION };
 
 struct Action {
   ActionType type;
   union {
     std::string_view displayText;
     GraphicRendition color;
-    SetCursorPosition setCursorPosition;
-    ClearDisplay clearDisplay;
+    ChangeCursorPosition cursorPosition;
+    uint singleIntCsi;
   };
 
   Action(std::string_view displayText_) : type(DISPLAY_TEXT), displayText(displayText_) {}
   Action(GraphicRendition color_) : type(UPDATE_GRAPHIC_ATTRIBUTES), color(color_) {}
-  Action(SetCursorPosition setCursorPosition_) : type(SET_CURSOR_POSITION), setCursorPosition(setCursorPosition_) {}
-  Action(ClearDisplay clearDisplay_) : type(CLEAR_DISPLAY), clearDisplay(clearDisplay_) {}
+  Action(ChangeCursorPosition cursorPosition_) : type(SET_CURSOR_POSITION), cursorPosition(cursorPosition_) {}
+  Action(ActionType type_, uint singleIntCsi_) : type(type_), singleIntCsi(singleIntCsi_) {}
 };
 
 class CsiStringFragment {
@@ -58,7 +52,7 @@ class CsiStringFragment {
   Action action;
 
   CsiStringFragment() : color(), action(Action("")) {}
-  CsiStringFragment(GraphicRendition color_) : color(color_), action(Action(color_)) {}
+  explicit CsiStringFragment(GraphicRendition color_) : color(color_), action(Action(color_)) {}
 
   inline CsiStringFragment withAction(Action action_) {
     return CsiStringFragment(color, action_);

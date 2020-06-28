@@ -51,9 +51,11 @@ class XCowsay {
 
   static bool tryReadLine(FILE *, std::string &);
   bool drawFrame();
-  void clearDisplay(const ClearDisplay &, const uint lineHeight);
-  void setCursorPosition(const SetCursorPosition &, const uint);
-  void displayText(const std::string_view &, const uint);
+  void clearDisplay(uint, uint);
+  void clearLine(uint, uint);
+  void deleteChar(uint, uint);
+  void setCursorPosition(const ChangeCursorPosition &, uint);
+  void displayText(const std::string_view &, uint);
 
  public:
   XCowsay(Display *display_,
