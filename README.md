@@ -2,22 +2,24 @@
 
 `fortune | cowsay` as screensaver in XScreenSaver and xfce4-screensaver!
 
-xcowsay allows you to run ANY Linux command and display the output as your screensaver.
+xcowsay allows you to run **ANY** Linux command and display the output as your screensaver.
 Command will be refreshed (rerun) by xcowsay automatically.
 
 It supports:
-1. Color text output!
+1. Colorful text output (CSI codes)
 2. Refreshing and animations
 3. Multiple fonts
 
 ## Colors
-Xcowsay respects CSI (ANSI escape sequences) so your output can be colored!
+xcowsay respects CSI (ANSI escape sequences) so your output can be colored!
 Try setup below command in settings:
 
-```fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term```
+```shell
+fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term
+```
 
 ## Requirements
-1. CMake
+1. Cargo (Rust)
 2. libx11-dev
 
 And one of the screensavers:
@@ -27,11 +29,9 @@ And one of the screensavers:
 # Installation & configuration
 
 ## Compile xcowsay
-1. Compile
 To compile xcowsay run:
-```
-cmake CMakeLists.txt
-make
+```shell
+cargo build --release
 ```
 
 ## Install xcowsay for XScreenSaver
@@ -42,17 +42,17 @@ make
 
 E.g.
 ```
-cp bin/xcowsay /usr/lib/xscreensaver
+cp target/release/xcowsay /usr/lib/xscreensaver
 cp xscreen-config/xcowsay.xml /usr/share/xscreensaver/config
 ```
-*Make sure that files has proper permissions set for read and execution*
+*Make sure that files have proper permissions set for read and execution*
 
 ## Install xcowsay for xfce4-screensaver
 1. Copy xcowsay program to xfce4-screensaver binaries
 2. Copy xcowsay.desktop file to xfce4-screensaver configuration directory
 E.g. for Xubuntu:
 ```
-cp bin/xcowsay /usr/libexec/xfce4-screensaver/xcowsay
+cp target/release/xcowsay /usr/libexec/xfce4-screensaver/xcowsay
 cp xscreen-config/xcowsay.desktop /usr/share/applications/screensavers/xcowsay.desktop
 ```
 *Make sure that files has proper permissions set for read and execution*
@@ -60,7 +60,7 @@ cp xscreen-config/xcowsay.desktop /usr/share/applications/screensavers/xcowsay.d
 ## Configuration
 Following params can be configured in screensaver settings GUI:
 * `-d` delay - delay to next command execution in seconds
-* `-c` comamnd - command to be executed
+* `-c` command - command to be executed
 * `-r` randomize - randomize starting position of the output
 * `-f` font - (advenced) font to be used to display the output of the command. Use [X logical font description (XLFD)](https://en.wikipedia.org/wiki/X_logical_font_description) format to specify the font e.g. `-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*`.
   *Use `xlsfonts` command to list avaliable fonts*
@@ -72,6 +72,7 @@ Other options:
 
 ## Install special cows
 *This step is optional.*
+
 You can install additional cows for cowsay eg. colorfull christmas tree.
 To do that just copy them to cowsay cows directory:
 ```
@@ -80,11 +81,11 @@ cp cows/* /usr/share/cowsay/cows
 
 ## Debug mode
 Debug mode runs xcowsay in separate window instead of root window (screensaver). To enable it use `-D` switch.
-Example: `./bin/xcowsay -D -d 5 -f '-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*' -c 'echo "Hello \e[31;42mXCowsay\e[0;32m (debug mode)\e[0m"'`
+E.g.: `cargo run -- -D -d 5 -c 'echo "Hello \e[31;42mXCowsay\e[0;32m (debug mode)\e[0m"'`
 
 ## Development
 Style:
-1. Use Google C++ code style.
+1. Use `rustfmt` code style.
 2. Add blank line in the end of files.
 
 # TODO list:

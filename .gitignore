@@ -1,9 +1,3 @@
+/target
+Cargo.lock
 .idea
-xcowsay.cbp
-
-CMakeCache.txt
-CMakeFiles
-Makefile
-bin
-cmake_install.cmake
-install_manifest.txt
