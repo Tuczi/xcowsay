@@ -12,12 +12,10 @@ use crate::control_code_parse::XCowsayParser;
 use crate::rgb_color::RgbColor;
 use crate::xcontext::{XContext};
 use crate::xdraw::XCowsayDrawer;
-use std::io::Read;
 use std::str::from_utf8;
 use self::x11::xlib::XEvent;
 use std::time::Duration;
-use crate::command::Command;
-use std::process::Child;
+use crate::command::{Command, CommandOutputIterator};
 
 
 pub struct XCowsay {
@@ -164,40 +162,20 @@ impl XCowsay {
         }
     }
 
-    //TODO refactor this low-level output reading - move to separate module e.g. Command
-    fn parse_process_output(&mut self, process: &mut Child) {
-        let mut stdout = process.stdout.take().unwrap();
-
+    fn parse_process_output(&mut self, output: &mut CommandOutputIterator) {
         //TODO steam locomotive
         // looks like cursor is updated improperly - check where its updated (e.g. display raw text)
 
-        const BUFFER_SIZE : usize = 1*1024;
-        let mut buffer = [0;BUFFER_SIZE];
-        let mut buffer_read_start = 0;
-        while let Ok(read_bytes) = stdout.read(&mut buffer[buffer_read_start..]) {
-            let end_of_buffer = buffer_read_start + read_bytes;
-            let text = from_utf8(&buffer).unwrap();//TODO handle error
+        while let Some(read_bytes) = output.read() {
+            let text = from_utf8(read_bytes).unwrap();//TODO handle error
 
-            let chars_parsed = self.parser.parse(&text[..end_of_buffer], &mut self.drawer);
+            let chars_parsed = self.parser.parse(&text, &mut self.drawer);
             self.drawer.flush();
 
             //TODO doesn't work for utf-8
-            buffer_read_start = end_of_buffer - chars_parsed;
-
-            // we could use ringbuffer instead of copying back unparsed data but this is usually less than 10 bytes so no difference
-            for i in 0..buffer_read_start { //copy unparsed data to the beginning
-                buffer[i] = buffer[chars_parsed + i];
-            }
-
-            let process_status = process.try_wait();
-            if process_status.is_err() {
-                let kill_result = process.kill();
-                log::error!("Error checking process status. Process killed with status: {:?}", kill_result);
-                break;
-            } else if process_status.unwrap().is_some() && read_bytes == 0 { // TODO read should be execute here again to avoid race conditions
-                break;
-            }
-
-        }//TODO handle error
+            let len = read_bytes.len();
+            // copy unparsed data to the beginning
+            output.copy_leftovers(chars_parsed..len);
+        }
     }
 }

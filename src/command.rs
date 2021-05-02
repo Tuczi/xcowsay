@@ -1,5 +1,6 @@
 use crate::config::Opt;
-use std::io::Error;
+use std::io::Read;
+use std::ops::Range;
 use std::process::{Child, ChildStdout, Stdio};
 
 pub struct Command {
@@ -14,13 +15,92 @@ impl Command {
         }
     }
 
-    pub fn start_process_command(&self) -> std::io::Result<Child> {
-        std::process::Command::new("sh")
+    pub fn start_process_command(&self) -> std::io::Result<CommandOutputIterator> {
+        let child = std::process::Command::new("sh")
             .arg("-c")
             .arg(self.cmd.as_str())
             .stdout(Stdio::piped())
-            .spawn()
+            .spawn();
+
+        match child {
+            Ok(mut process) => {
+                let stdout = process.stdout.take().unwrap();
+
+                Ok(CommandOutputIterator {
+                    buffer: [0; BUFFER_SIZE],
+                    buffer_read_start: 0,
+                    process,
+                    stdout,
+                })
+            }
+            Err(e) => Err(e),
+        }
+    }
+}
+
+const BUFFER_SIZE: usize = 1 * 1024;
+
+/// Custom iterator over `process` `stdout` that uses fixed `buffer`
+pub struct CommandOutputIterator {
+    buffer: [u8; BUFFER_SIZE],
+    buffer_read_start: usize,
+    process: Child,
+    stdout: ChildStdout,
+}
+
+impl CommandOutputIterator {
+    /// Reads available `stdout` as `Some<&[u8]>`.
+    /// Returns `None` if there is no more data to read
+    pub fn read(&mut self) -> Option<&[u8]> {
+        let process_status = self.process.try_wait();
+        let process_finished = match process_status {
+            Ok(process_status) => process_status.is_some(),
+            Err(e) => {
+                let kill_result = self.process.kill();
+                log::error!(
+                    "Error checking process status: {:?}. Process killed with status: {:?}",
+                    e,
+                    kill_result
+                );
+                return None;
+            }
+        };
+
+        return match self.stdout.read(&mut self.buffer[self.buffer_read_start..]) {
+            Ok(read_bytes) => {
+                if process_finished && read_bytes == 0 {
+                    return None; // end of process and it's output
+                }
+
+                let end_of_buffer = self.buffer_read_start + read_bytes;
+                Some(&self.buffer[..end_of_buffer])
+            }
+            Err(e) => {
+                if process_finished {
+                    log::error!("Error reading process output: {:?}.", e);
+                } else {
+                    let kill_result = self.process.kill();
+                    log::error!(
+                        "Error reading process output: {:?}. Process killed with status: {:?}",
+                        e,
+                        kill_result
+                    );
+                }
+                None
+            }
+        };
     }
 
+    /// Copies buffer `range` to the beginning so next read can return that
+    ///
+    /// Dev notes:
+    /// Just copy the data instead of using some fancy data structure like ringbuffer.
+    /// This is usually less than 5-10 bytes so there is no performance differance and implementation is simple.
+    pub fn copy_leftovers(&mut self, range: Range<usize>) {
+        for i in 0..range.len() {
+            self.buffer[i] = self.buffer[range.start + i];
+        }
 
+        self.buffer_read_start = range.len();
+    }
 }

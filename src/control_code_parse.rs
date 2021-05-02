@@ -4,7 +4,6 @@ use control_code::C1::ControlSequence;
 use control_code::CSI;
 use control_code::SGR;
 
-use crate::command;
 use crate::config::Opt;
 use crate::rgb_color::RgbColor;
 use crate::xcowsay::{DrawString, SetCursor, SetDisplay};
