@@ -12,31 +12,29 @@ use crate::xcowsay::{DrawString, SetCursor, SetDisplay};
 use std::collections::HashMap;
 
 pub struct XCowsayParser {
-    pub command: command::Command,//TODO move this ownership somewhere else?
-    pub unimplemented_codes: HashMap<String, u32>,
+    unimplemented_codes: HashMap<String, u32>,
 }
 
 macro_rules! log_unimplemented {
-    ( $map:expr, $t:expr, $control_code:expr, $extra_log:expr ) => {
+    ( $self:ident, $t:expr, $control_code:expr, $extra_log:expr ) => {
         {
-           //println!("Unimplemented control code {} {:?}. {}", $t, $control_code, $extra_log);
-           *$map.entry(format!("{} {:?}", $t, $control_code)).or_insert(0) += 1;
-
+            if log::log_enabled!(log::Level::Debug) {
+                *$self.unimplemented_codes.entry(format!("{} {:?}", $t, $control_code)).or_insert(0) += 1;
+            }
         }
     };
-    ( $map:expr, $t:expr, $control_code:expr ) => {
+    ( $self:ident, $t:expr, $control_code:expr ) => {
         {
-            //println!("Unimplemented control code {} {:?}", $t, $control_code);
-            *$map.entry(format!("{} {:?}", $t, $control_code)).or_insert(0) += 1;
+            if log::log_enabled!(log::Level::Debug) {
+                *$self.unimplemented_codes.entry(format!("{} {:?}", $t, $control_code)).or_insert(0) += 1;
+            }
         }
     };
 }
 
 impl XCowsayParser {
     pub fn new(config: &Opt) -> XCowsayParser {
-        let command = command::Command::new(config);
-
-        XCowsayParser { command, unimplemented_codes: HashMap::new() }
+        XCowsayParser { unimplemented_codes: HashMap::new() }
     }
 
     /// Returns number of bytes read from `text` slice
@@ -84,27 +82,27 @@ impl XCowsayParser {
                 }
                 IResult::Done(expr, Control::DEC(code)) => {
                     i = text.len() - expr.len() - 1; //TODO doesn't work for utf-8
-                    log_unimplemented!(&mut self.unimplemented_codes, "DEC", code);
+                    log_unimplemented!(self, "DEC", code);
                 }
 
                 IResult::Incomplete(needed) => {
-                    log_unimplemented!(&mut self.unimplemented_codes, "CONTROL INCOMPLETE", needed);
+                    log_unimplemented!(self, "CONTROL INCOMPLETE", needed);
                     chars_read = i;
                     break;
                 }
 
                 IResult::Error(ErrorKind::Custom(0)) => {
-                    log_unimplemented!(&mut self.unimplemented_codes, "CUSTOM_ERROR", parse_result, "first byte is not a start of control sequence");
+                    log_unimplemented!(self, "CUSTOM_ERROR", parse_result, "first byte is not a start of control sequence");
                 }
 
                 IResult::Error(error) => {
-                    log_unimplemented!(&mut self.unimplemented_codes, "ERROR", error);
+                    log_unimplemented!(self, "ERROR", error);
                 }
             }
             i += 1;
         }
 
-        println!("Unimplemented status codes: {:?}", self.unimplemented_codes);
+        log::debug!("Unimplemented status codes: {:?}", self.unimplemented_codes);
         self.unimplemented_codes = HashMap::new();
 
         chars_read
@@ -129,7 +127,7 @@ impl XCowsayParser {
                             }
 
                             _ => {
-                                log_unimplemented!(&mut self.unimplemented_codes, "C1 SGR", sgr);
+                                log_unimplemented!(self, "C1 SGR", sgr);
                             }
                         }
                     }
@@ -167,11 +165,11 @@ impl XCowsayParser {
                 }
 
                 _ => {
-                    log_unimplemented!(&mut self.unimplemented_codes, "C1 CSI", csi);
+                    log_unimplemented!(self, "C1 CSI", csi);
                 }
             }
         } else {
-            log_unimplemented!(&mut self.unimplemented_codes, "C1", code);
+            log_unimplemented!(self, "C1", code);
         }
     }
 
@@ -191,7 +189,7 @@ impl XCowsayParser {
                 Err(())
             }
             _ => {
-                log_unimplemented!(&mut self.unimplemented_codes, "C0", code);
+                log_unimplemented!(self, "C0", code);
                 Ok(())
             }
         }

@@ -16,13 +16,16 @@ use std::io::Read;
 use std::str::from_utf8;
 use self::x11::xlib::XEvent;
 use std::time::Duration;
+use crate::command::Command;
+use std::process::Child;
 
 
 pub struct XCowsay {
     xcontext: XContext,
     drawer: XCowsayDrawer,
     parser: XCowsayParser,
-    delay: Duration
+    command: Command,
+    delay: Duration,
 }
 
 pub trait SetDisplay {
@@ -51,13 +54,14 @@ impl XCowsay {
         let xcontext = XContext::new(&config);
         let drawer = XCowsayDrawer::new(&config, xcontext.clone());
         let parser = XCowsayParser::new(&config);
-
+        let command = Command::new(&config);
         let delay = Duration::from_secs(config.delay);
 
         XCowsay {
             xcontext,
             drawer,
             parser,
+            command,
             delay,
         }
     }
@@ -113,57 +117,21 @@ impl XCowsay {
         loop {
             // This is safe as per `XContext` guaranties
             unsafe { xlib::XNextEvent(self.xcontext.display, &mut event); }
-            println!("Next Xevent");
+            log::debug!("Next Xevent");
             match event.get_type() {
                 xlib::ClientMessage => {
                     let xclient = xlib::XClientMessageEvent::from(event);
 
                     if xclient.message_type == wm_protocols && xclient.format == 32 { //TODO should we compare message_type with array or specific event type?
                         let protocol = xclient.data.get_long(0) as xlib::Atom;
-
                         if protocol == wm_delete_window {
                             break;
                         }
                     } else {
                         self.drawer.prepare_new_frame();
 
-                        if let Ok(mut process) = self.parser.command.start_process_command() {
-                            let mut stdout = process.stdout.take().unwrap();
-
-                            //TODO steam locomotive
-                            // looks like cursor is updated improperly - check where its updated (e.g. display raw text)
-
-                            const BUFFER_SIZE : usize = 1*1024; // TODO tune buffer size
-                            let mut buffer = [0;BUFFER_SIZE];
-                            let mut buffer_read_start = 0;
-                            while let Ok(read_bytes) = stdout.read(&mut buffer[buffer_read_start..]) {
-                                let end_of_buffer = buffer_read_start + read_bytes;
-                                let text = from_utf8(&buffer).unwrap();//TODO handle error
-                                let chars_parsed = self.parser.parse(&text[..end_of_buffer], &mut self.drawer);//TODO handle error
-
-                                //TODO doesn't work for utf-8
-                                buffer_read_start = end_of_buffer - chars_parsed;
-                                if buffer_read_start > 0 {
-                                    println!("AAA {} {} {}", read_bytes, chars_parsed, end_of_buffer);
-                                    println!("Copying {} {:?}", buffer_read_start, &buffer[chars_parsed..end_of_buffer]);
-                                }
-                                for i in 0..buffer_read_start { //copy unparsed data to the beggining
-                                    buffer[i] = buffer[chars_parsed + i];
-                                }
-                                self.drawer.flush();
-
-                                //TODO process might be completed but output not fully read
-                                let process_status = process.try_wait();
-                                if process_status.is_err() {
-                                    println!("Error checking proces status");
-                                    process.kill();//TODO check result
-                                    break;
-                                } else if process_status.unwrap().is_some() && read_bytes == 0{ // TODO read should be execute here again to avoid race conditions
-                                    break;
-                                }
-
-                            }//TODO handle error
-
+                        if let Ok(mut process) = self.command.start_process_command() {
+                            self.parse_process_output(&mut process);
                         } //TODO handle error
 
                         self.send_dummy_event();
@@ -194,5 +162,42 @@ impl XCowsay {
             xlib::XSendEvent(self.xcontext.display, self.xcontext.window, 0, 0, &mut tmp);
             xlib::XFlush(self.xcontext.display);
         }
+    }
+
+    //TODO refactor this low-level output reading - move to separate module e.g. Command
+    fn parse_process_output(&mut self, process: &mut Child) {
+        let mut stdout = process.stdout.take().unwrap();
+
+        //TODO steam locomotive
+        // looks like cursor is updated improperly - check where its updated (e.g. display raw text)
+
+        const BUFFER_SIZE : usize = 1*1024;
+        let mut buffer = [0;BUFFER_SIZE];
+        let mut buffer_read_start = 0;
+        while let Ok(read_bytes) = stdout.read(&mut buffer[buffer_read_start..]) {
+            let end_of_buffer = buffer_read_start + read_bytes;
+            let text = from_utf8(&buffer).unwrap();//TODO handle error
+
+            let chars_parsed = self.parser.parse(&text[..end_of_buffer], &mut self.drawer);
+            self.drawer.flush();
+
+            //TODO doesn't work for utf-8
+            buffer_read_start = end_of_buffer - chars_parsed;
+
+            // we could use ringbuffer instead of copying back unparsed data but this is usually less than 10 bytes so no difference
+            for i in 0..buffer_read_start { //copy unparsed data to the beginning
+                buffer[i] = buffer[chars_parsed + i];
+            }
+
+            let process_status = process.try_wait();
+            if process_status.is_err() {
+                let kill_result = process.kill();
+                log::error!("Error checking process status. Process killed with status: {:?}", kill_result);
+                break;
+            } else if process_status.unwrap().is_some() && read_bytes == 0 { // TODO read should be execute here again to avoid race conditions
+                break;
+            }
+
+        }//TODO handle error
     }
 }

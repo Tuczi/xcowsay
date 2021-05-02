@@ -1,5 +1,6 @@
 use crate::config::Opt;
-use std::process::{Stdio, Child};
+use std::io::Error;
+use std::process::{Child, ChildStdout, Stdio};
 
 pub struct Command {
     cmd: String,
