@@ -15,23 +15,33 @@ mod xdraw;
 fn main() {
     let opts = config::from_args();
     setup_logger(&opts);
+    let result = std::panic::catch_unwind(|| {
+        let mut xcowsay = xcowsay::XCowsay::new(opts);
+        log::debug!("Init finished");
+        xcowsay.start_xevent_loop();
+        log::debug!("xevent loop finished");
+        xcowsay.close();
+        log::debug!("xevent closed");
+    });
 
-    let mut xcowsay = xcowsay::XCowsay::new(opts);
-    xcowsay.start_xevent_loop();
-    xcowsay.close();
+    if result.is_err() {
+        log::error!("xcowsay panic: {:?}", result.err().unwrap());
+    } else {
+        log::info!("Exiting xcowsay");
+    }
 }
 
 fn setup_logger(opts: &Opt) {
     let log_level = if opts.debug {
-        3 // log::LevelFilter::Debug
+        stderrlog::new()
+            .module(module_path!())
+            .verbosity(3) //log::LevelFilter::Debug
+            .color(stderrlog::ColorChoice::AlwaysAnsi)
+            .init()
+            .unwrap();
     } else {
-        0 // log::LevelFilter::Error
+        simple_logging::log_to_file("/tmp/xcowsay-test.log", log::LevelFilter::Warn);
     };
 
-    stderrlog::new()
-        .module(module_path!())
-        .verbosity(log_level)
-        .color(stderrlog::ColorChoice::AlwaysAnsi)
-        .init()
-        .unwrap();
+
 }

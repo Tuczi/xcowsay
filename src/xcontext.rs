@@ -11,7 +11,7 @@ pub type XWindow = c_ulong;
 pub type XScreen = c_int;
 
 /// Keeps all necessary fields for drawing and provides raw pointers safety.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct XContext {
     pub display: *mut Display,
     pub screen: XScreen,

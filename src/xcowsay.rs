@@ -17,7 +17,6 @@ use self::x11::xlib::XEvent;
 use std::time::Duration;
 use crate::command::{Command, CommandOutputIterator};
 
-
 pub struct XCowsay {
     xcontext: XContext,
     drawer: XCowsayDrawer,
@@ -50,6 +49,7 @@ pub trait DrawString {
 impl XCowsay {
     pub fn new(config: Opt) -> XCowsay {
         let xcontext = XContext::new(&config);
+        log::debug!("XContext init: {:?}", xcontext);
         let drawer = XCowsayDrawer::new(&config, xcontext.clone());
         let parser = XCowsayParser::new(&config);
         let command = Command::new(&config);
@@ -71,6 +71,7 @@ impl XCowsay {
     //TODO refactor, maybe move parts of the logic to drawer
     //TODO check for safer code here https://github.com/erlepereira/x11-rs/blob/master/x11/examples/input.rs
     pub fn start_xevent_loop(&mut self) {
+        log::debug!("Preparing xevent loop");
         // Hook close requests.
         let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap(); // safe unwrap as string does not have 0 char
         let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap(); // safe unwrap as string does not have 0 char
@@ -111,7 +112,8 @@ impl XCowsay {
             mem::MaybeUninit::uninit().assume_init()
         };
 
-        // Main loop
+
+        log::debug!("Starting xevent loop");
         loop {
             // This is safe as per `XContext` guaranties
             unsafe { xlib::XNextEvent(self.xcontext.display, &mut event); }
@@ -142,6 +144,7 @@ impl XCowsay {
     }
 
     fn send_dummy_event(&self) {
+        log::debug!("Sending dummy event");
         let dummy_event = xlib::XClientMessageEvent {
             type_: xlib::ClientMessage,
             serial: 0,
