@@ -73,7 +73,7 @@ Other options:
 ## Install special cows
 *This step is optional.*
 
-You can install additional cows for cowsay eg. colorfull christmas tree.
+You can install additional cows for cowsay eg. colorful christmas tree.
 To do that just copy them to cowsay cows directory:
 ```
 cp cows/* /usr/share/cowsay/cows

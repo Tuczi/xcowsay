@@ -14,7 +14,10 @@ x11 = { version = "2.18.2", features = ["xlib"] }
 libc = "0.2.93"
 
 structopt = { version = "0.3", default-features = false }
+clap = "2.33.3"
+
 rand = "0.8.3"
 control-code = "0.7.1"
+
 log = "0.4.14"
 stderrlog = "0.5.1"
