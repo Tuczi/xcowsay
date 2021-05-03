@@ -47,14 +47,14 @@ impl RgbColor {
     }
 }
 
-//TODO should it support different defaults for foreground and background?
 impl From<SGR::Color> for RgbColor {
     fn from(sgr_color: Color) -> Self {
         match sgr_color {
             Color::Index(index) => RgbColor(CSI_COLORS_MAP[index as usize]),
             Color::Rgb(r, g, b) => RgbColor(((r as u32) << 16) | ((g as u32) << 8) | (b as u32)),
+            Color::Default => RgbColor::black(), //TODO should it support different defaults for foreground and background?
             _ => {
-                // TODO implement other color formats
+                log::trace!("Unimplemented color format {:?}. Using default.", sgr_color);
                 RgbColor::black()
             }
         }

@@ -14,6 +14,7 @@ use crate::xcontext::XContext;
 use crate::xdraw::XCowsayDrawer;
 use std::str::from_utf8;
 use std::time::Duration;
+use std::io::Error;
 
 pub struct XCowsay {
     xcontext: XContext,
@@ -47,7 +48,7 @@ pub trait DrawString {
 impl XCowsay {
     pub fn new(config: Opt) -> XCowsay {
         let xcontext = XContext::new(&config);
-        log::debug!("XContext init: {:?}", xcontext);
+        log::info!("XContext init: {:?}", xcontext);
         let drawer = XCowsayDrawer::new(&config, xcontext.clone());
         let parser = XCowsayParser::new(&config);
         let command = Command::new(&config);
@@ -68,21 +69,22 @@ impl XCowsay {
 
     //TODO I had to remove handling events as it looks like xfce-screensaver doesn't pass events and program hangs. Debug why
     pub fn start_xevent_loop(&mut self) {
-        log::debug!("Starting xevent loop");
+        log::info!("Starting xevent loop");
         loop {
             self.drawer.prepare_new_frame();
 
-            if let Ok(mut process) = self.command.start_process_command() {
-                self.parse_process_output(&mut process);
-            } //TODO handle error
+            match self.command.start_process_command() {
+                Ok(mut process) => self.parse_process_output(&mut process),
+                Err(e) => log::error!("Cannot start command: {:?}", e),
+            }
 
             self.send_dummy_event();
+            log::info!("Command is fully processed. Going sleep for {:?}.", self.delay);
             thread::sleep(self.delay);
         }
     }
 
     fn send_dummy_event(&self) {
-        log::debug!("Sending dummy event");
         let dummy_event = xlib::XClientMessageEvent {
             type_: xlib::ClientMessage,
             serial: 0,

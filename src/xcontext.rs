@@ -23,10 +23,12 @@ pub struct XContext {
 
 impl XContext {
     fn open_display() -> *mut Display {
-        let display = CString::new(std::env::var("DISPLAY").unwrap()).unwrap(); // TODO handle errors
-                                                                                // This is safe because display string is pre-validated
+        let display_env = std::env::var("DISPLAY").unwrap();
+        let display = CString::new(display_env.clone()).unwrap();
+        // This is safe because display string is pre-validated
         let display = unsafe { xlib::XOpenDisplay(display.as_ptr()) };
         if display.is_null() {
+            log::error!("Cannot open display for env DISPLAY={}", display_env);
             panic!("XOpenDisplay failed");
         }
 
@@ -35,6 +37,7 @@ impl XContext {
 
     fn get_root_window(display: *mut xlib::Display, screen: XScreen, config: &Opt) -> XWindow {
         if config.debug {
+            log::info!("Creating new window");
             // create new window in debug mode
             // This is safe because display and screen are pre-validated
             unsafe {
@@ -57,37 +60,36 @@ impl XContext {
 
         let window = std::env::var("XSCREENSAVER_WINDOW");
         if window.is_ok() {
-            let window = window.unwrap(); // TODO handle error
-            let tmp = CString::new(window).unwrap(); // TODO handle error
-                                                     //needs c style format detecting
-                                                     // This is safe as tmp is not null
+            let window = window.unwrap();
+            let tmp = CString::new(window).unwrap();
+
+            // This is safe as tmp is not null
             unsafe {
+                //needs c style format detecting
                 let window = libc::strtoul(tmp.as_ptr(), std::ptr::null_mut(), 0);
-                //TODO check for errors
+                //TODO check for errors from strtoul
 
                 return window;
             }
         }
 
-        //TODO log info about using default root as fallback
+        log::warn!("Cannot open window for XSCREENSAVER_WINDOW={:?}. Using fallback to XDefaultRootWindow", window);
         // This is safe as display is pre-validated
         unsafe { xlib::XDefaultRootWindow(display) }
     }
 
     fn load_font(display: *mut Display, gc: xlib::GC, config: &Opt) -> *mut XFontStruct {
-        let font = CString::new(config.font.as_str()).unwrap(); // TODO handle error
-                                                                // This is safe as display is pre-validated and font is not null
+        let font = CString::new(config.font.as_str()).unwrap();
+        // This is safe as display is pre-validated and font is not null
         unsafe {
             let font = xlib::XLoadFont(display, font.as_ptr());
             //TODO error handling
             xlib::XSetFont(display, gc, font);
 
-            // get font metrics
-            let mut v: xlib::XGCValues = mem::MaybeUninit::uninit().assume_init(); // It is init in the next line using XGetGCValues
-            xlib::XGetGCValues(display, gc, xlib::GCFont as c_ulong, &mut v);
-            let font_struct = xlib::XQueryFont(display, v.font);
+            let font_struct = xlib::XQueryFont(display, font);
             //TODO test for this nullcheck as this is part of the contract
             if font_struct.is_null() {
+                log::error!("Cannot query font for {}", config.font);
                 panic!("XQueryFont failed. Font \"{}\"", config.font);
             }
 

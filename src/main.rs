@@ -17,11 +17,11 @@ fn main() {
     setup_logger(&opts);
     let result = std::panic::catch_unwind(|| {
         let mut xcowsay = xcowsay::XCowsay::new(opts);
-        log::debug!("Init finished");
+        log::info!("Xcowsay init finished");
         xcowsay.start_xevent_loop();
-        log::debug!("xevent loop finished");
+        log::info!("xevent loop finished");
         xcowsay.close();
-        log::debug!("xevent closed");
+        log::info!("xevent closed");
     });
 
     if result.is_err() {
