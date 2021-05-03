@@ -13,7 +13,8 @@ pub struct Opt {
     pub cmd: String,
     #[structopt(short, long, default_value = "5")]
     pub delay: u64, // TODO type Duration
-    #[structopt(short, long, default_value = "-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*")]//TODO fix passing font string as argument
+    #[structopt(short, long, default_value = "-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*")]
+    //TODO fix passing font string as argument
     pub font: String,
     #[structopt(short, long)]
     pub randomize: bool,
@@ -25,7 +26,6 @@ pub struct Opt {
 pub fn from_args() -> Opt {
     Opt::from_args()
 }
-
 
 #[cfg(test)]
 mod test {

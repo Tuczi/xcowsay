@@ -24,7 +24,7 @@ pub struct XContext {
 impl XContext {
     fn open_display() -> *mut Display {
         let display = CString::new(std::env::var("DISPLAY").unwrap()).unwrap(); // TODO handle errors
-        // This is safe because display string is pre-validated
+                                                                                // This is safe because display string is pre-validated
         let display = unsafe { xlib::XOpenDisplay(display.as_ptr()) };
         if display.is_null() {
             panic!("XOpenDisplay failed");
@@ -60,7 +60,7 @@ impl XContext {
             let window = window.unwrap(); // TODO handle error
             let tmp = CString::new(window).unwrap(); // TODO handle error
                                                      //needs c style format detecting
-            // This is safe as tmp is not null
+                                                     // This is safe as tmp is not null
             unsafe {
                 let window = libc::strtoul(tmp.as_ptr(), std::ptr::null_mut(), 0);
                 //TODO check for errors
@@ -71,14 +71,12 @@ impl XContext {
 
         //TODO log info about using default root as fallback
         // This is safe as display is pre-validated
-        unsafe {
-            xlib::XDefaultRootWindow(display)
-        }
+        unsafe { xlib::XDefaultRootWindow(display) }
     }
 
     fn load_font(display: *mut Display, gc: xlib::GC, config: &Opt) -> *mut XFontStruct {
         let font = CString::new(config.font.as_str()).unwrap(); // TODO handle error
-        // This is safe as display is pre-validated and font is not null
+                                                                // This is safe as display is pre-validated and font is not null
         unsafe {
             let font = xlib::XLoadFont(display, font.as_ptr());
             //TODO error handling
@@ -100,7 +98,8 @@ impl XContext {
     fn read_window_attributes(display: *mut Display, window: XWindow) -> XWindowAttributes {
         // This is safe as display and window are pre-validated and not null
         unsafe {
-            let mut window_attributes: xlib::XWindowAttributes = mem::MaybeUninit::uninit().assume_init(); // It is init in the next line using XGetWindowAttributes
+            let mut window_attributes: xlib::XWindowAttributes =
+                mem::MaybeUninit::uninit().assume_init(); // It is init in the next line using XGetWindowAttributes
             xlib::XGetWindowAttributes(display, window, &mut window_attributes);
 
             window_attributes

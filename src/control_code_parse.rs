@@ -1,8 +1,8 @@
 use control_code::nom::{ErrorKind, IResult};
-use control_code::{Control, C0};
 use control_code::C1::ControlSequence;
 use control_code::CSI;
 use control_code::SGR;
+use control_code::{Control, C0};
 
 use crate::config::Opt;
 use crate::rgb_color::RgbColor;
@@ -15,25 +15,29 @@ pub struct XCowsayParser {
 }
 
 macro_rules! log_unimplemented {
-    ( $self:ident, $t:expr, $control_code:expr, $extra_log:expr ) => {
-        {
-            if log::log_enabled!(log::Level::Debug) {
-                *$self.unimplemented_codes.entry(format!("{} {:?}", $t, $control_code)).or_insert(0) += 1;
-            }
+    ( $self:ident, $t:expr, $control_code:expr, $extra_log:expr ) => {{
+        if log::log_enabled!(log::Level::Debug) {
+            *$self
+                .unimplemented_codes
+                .entry(format!("{} {:?}", $t, $control_code))
+                .or_insert(0) += 1;
         }
-    };
-    ( $self:ident, $t:expr, $control_code:expr ) => {
-        {
-            if log::log_enabled!(log::Level::Debug) {
-                *$self.unimplemented_codes.entry(format!("{} {:?}", $t, $control_code)).or_insert(0) += 1;
-            }
+    }};
+    ( $self:ident, $t:expr, $control_code:expr ) => {{
+        if log::log_enabled!(log::Level::Debug) {
+            *$self
+                .unimplemented_codes
+                .entry(format!("{} {:?}", $t, $control_code))
+                .or_insert(0) += 1;
         }
-    };
+    }};
 }
 
 impl XCowsayParser {
     pub fn new(config: &Opt) -> XCowsayParser {
-        XCowsayParser { unimplemented_codes: HashMap::new() }
+        XCowsayParser {
+            unimplemented_codes: HashMap::new(),
+        }
     }
 
     /// Returns number of bytes read from `text` slice
@@ -69,7 +73,7 @@ impl XCowsayParser {
             match parse_result {
                 IResult::Done(expr, Control::C0(code)) => {
                     i = text.len() - expr.len() - 1; //TODO doesn't work for utf-8
-                    let c0_result = self.on_c0(code, callback);//TODO use better return type to signalize end of stream
+                    let c0_result = self.on_c0(code, callback); //TODO use better return type to signalize end of stream
                     if c0_result.is_err() {
                         chars_read = i;
                         break;
@@ -91,7 +95,12 @@ impl XCowsayParser {
                 }
 
                 IResult::Error(ErrorKind::Custom(0)) => {
-                    log_unimplemented!(self, "CUSTOM_ERROR", parse_result, "first byte is not a start of control sequence");
+                    log_unimplemented!(
+                        self,
+                        "CUSTOM_ERROR",
+                        parse_result,
+                        "first byte is not a start of control sequence"
+                    );
                 }
 
                 IResult::Error(error) => {
@@ -156,7 +165,7 @@ impl XCowsayParser {
                 }
 
                 CSI::CursorUp(by) => {
-                    callback.move_cursor_horizontal(- (by as i32));
+                    callback.move_cursor_horizontal(-(by as i32));
                 }
 
                 CSI::CursorDown(by) => {
@@ -172,7 +181,11 @@ impl XCowsayParser {
         }
     }
 
-    fn on_c0<T: DrawString + SetDisplay + SetCursor>(&mut self, code: control_code::C0::T, callback: &mut T) -> Result<(), ()>{
+    fn on_c0<T: DrawString + SetDisplay + SetCursor>(
+        &mut self,
+        code: control_code::C0::T,
+        callback: &mut T,
+    ) -> Result<(), ()> {
         match code {
             C0::LineFeed => {
                 callback.set_cursor_vertical(0);
@@ -184,9 +197,7 @@ impl XCowsayParser {
                 Ok(())
             }
 
-            C0::Null => {
-                Err(())
-            }
+            C0::Null => Err(()),
             _ => {
                 log_unimplemented!(self, "C0", code);
                 Ok(())

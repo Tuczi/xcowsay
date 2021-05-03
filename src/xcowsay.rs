@@ -1,21 +1,19 @@
 extern crate x11;
 
-use std::{mem, thread};
-use std::ffi::CString;
-use std::os::raw::*;
+use std::thread;
 
-use control_code::{CSI};
+use control_code::CSI;
 use x11::xlib;
 
+use self::x11::xlib::XEvent;
+use crate::command::{Command, CommandOutputIterator};
 use crate::config::Opt;
 use crate::control_code_parse::XCowsayParser;
 use crate::rgb_color::RgbColor;
-use crate::xcontext::{XContext};
+use crate::xcontext::XContext;
 use crate::xdraw::XCowsayDrawer;
 use std::str::from_utf8;
-use self::x11::xlib::XEvent;
 use std::time::Duration;
-use crate::command::{Command, CommandOutputIterator};
 
 pub struct XCowsay {
     xcontext: XContext,
@@ -29,8 +27,8 @@ pub trait SetDisplay {
     fn set_foreground_color(&mut self, color: RgbColor);
     fn reset_text_graphic(&mut self);
 
-    fn clear_line(&mut self, erase_mode: CSI::Erase);//TODO use type
-    fn clear_display(&mut self, erase_mode: CSI::Erase);//TODO use type
+    fn clear_line(&mut self, erase_mode: CSI::Erase); //TODO use type
+    fn clear_display(&mut self, erase_mode: CSI::Erase); //TODO use type
 
     fn delete_character(&mut self, count: u32);
 }
@@ -68,78 +66,18 @@ impl XCowsay {
         self.xcontext.close();
     }
 
-    //TODO refactor, maybe move parts of the logic to drawer
-    //TODO check for safer code here https://github.com/erlepereira/x11-rs/blob/master/x11/examples/input.rs
+    //TODO I had to remove handling events as it looks like xfce-screensaver doesn't pass events and program hangs. Debug why
     pub fn start_xevent_loop(&mut self) {
-        log::debug!("Preparing xevent loop");
-        // Hook close requests.
-        let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap(); // safe unwrap as string does not have 0 char
-        let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap(); // safe unwrap as string does not have 0 char
-
-        // This is safe as per `XContext` guaranties
-        let wm_protocols = unsafe {
-            xlib::XInternAtom(
-                self.xcontext.display,
-                wm_protocols_str.as_ptr(),
-                xlib::False,
-            )
-        };
-        // This is safe as per `XContext` guaranties
-        let wm_delete_window = unsafe {
-            xlib::XInternAtom(
-                self.xcontext.display,
-                wm_delete_window_str.as_ptr(),
-                xlib::False,
-            )
-        };
-
-        let mut protocols = [wm_delete_window];
-
-        // This is safe as per `XContext` guaranties
-        unsafe {
-            xlib::XSetWMProtocols(
-                self.xcontext.display,
-                self.xcontext.window,
-                protocols.as_mut_ptr(),
-                protocols.len() as c_int,
-            );
-        }
-
-        self.send_dummy_event();
-
-        // This is safe as value is init inside the loop using XNextEvent call
-        let mut event: xlib::XEvent = unsafe {
-            mem::MaybeUninit::uninit().assume_init()
-        };
-
-
         log::debug!("Starting xevent loop");
         loop {
-            // This is safe as per `XContext` guaranties
-            unsafe { xlib::XNextEvent(self.xcontext.display, &mut event); }
-            log::debug!("Next Xevent");
-            match event.get_type() {
-                xlib::ClientMessage => {
-                    let xclient = xlib::XClientMessageEvent::from(event);
+            self.drawer.prepare_new_frame();
 
-                    if xclient.message_type == wm_protocols && xclient.format == 32 { //TODO should we compare message_type with array or specific event type?
-                        let protocol = xclient.data.get_long(0) as xlib::Atom;
-                        if protocol == wm_delete_window {
-                            break;
-                        }
-                    } else {
-                        self.drawer.prepare_new_frame();
+            if let Ok(mut process) = self.command.start_process_command() {
+                self.parse_process_output(&mut process);
+            } //TODO handle error
 
-                        if let Ok(mut process) = self.command.start_process_command() {
-                            self.parse_process_output(&mut process);
-                        } //TODO handle error
-
-                        self.send_dummy_event();
-                        thread::sleep( self.delay);
-                    }
-                }
-                _ => (),
-            }
+            self.send_dummy_event();
+            thread::sleep(self.delay);
         }
     }
 
@@ -149,8 +87,8 @@ impl XCowsay {
             type_: xlib::ClientMessage,
             serial: 0,
             send_event: 0,
-            display : self.xcontext.display,
-            window : self.xcontext.window,
+            display: self.xcontext.display,
+            window: self.xcontext.window,
             message_type: 0,
             format: 32,
             data: Default::default(),
@@ -170,7 +108,7 @@ impl XCowsay {
         // looks like cursor is updated improperly - check where its updated (e.g. display raw text)
 
         while let Some(read_bytes) = output.read() {
-            let text = from_utf8(read_bytes).unwrap();//TODO handle error
+            let text = from_utf8(read_bytes).unwrap(); //TODO handle error
 
             let chars_parsed = self.parser.parse(&text, &mut self.drawer);
             self.drawer.flush();

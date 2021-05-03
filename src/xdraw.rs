@@ -8,7 +8,7 @@ use crate::xcontext::XContext;
 use crate::xcowsay::{DrawString, SetCursor, SetDisplay};
 use control_code::CSI::Erase;
 use rand::random;
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 use x11::xlib::XFontStruct;
 
 // Cursor position in pixels
@@ -20,7 +20,7 @@ struct CursorPosition {
 pub struct XCowsayDrawer {
     xcontext: XContext, //TODO pass reference here and remove Clone from XContext! or even better move ownership here as XCowsay might not need xcontext at all
     cursor_position: CursorPosition,
-    pub random_new_cursor_position: bool
+    pub random_new_cursor_position: bool,
 }
 
 impl XCowsayDrawer {
@@ -35,7 +35,6 @@ impl XCowsayDrawer {
         };
 
         self.cursor_position.y += self.font_ascent(); //ensure line is always fully visible
-
     }
 
     pub fn new(config: &Opt, xcontext: XContext) -> XCowsayDrawer {
@@ -79,8 +78,9 @@ impl XCowsayDrawer {
 
     fn char_width(&mut self) -> i32 {
         let single_char_str = CString::new(" ").unwrap(); // TODO handle error
-        // This is safe as we pass exact size of the text = 1
-        let char_display_size = unsafe { xlib::XTextWidth(self.xcontext.font, single_char_str.as_ptr(), 1) };
+                                                          // This is safe as we pass exact size of the text = 1
+        let char_display_size =
+            unsafe { xlib::XTextWidth(self.xcontext.font, single_char_str.as_ptr(), 1) };
         char_display_size
     }
 
@@ -107,7 +107,8 @@ impl DrawString for XCowsayDrawer {
         let str = CString::new(text).unwrap(); // TODO handle error
         let line_height = self.line_height();
         // This is safe as per `XContext` guaranties and str is not null and it's length is equal to `text.len()`
-        let text_width = unsafe { xlib::XTextWidth(self.xcontext.font, str.as_ptr(), text.len() as i32) };
+        let text_width =
+            unsafe { xlib::XTextWidth(self.xcontext.font, str.as_ptr(), text.len() as i32) };
         // This is safe as per `XContext` guaranties
         unsafe {
             xlib::XClearArea(
@@ -136,7 +137,9 @@ impl DrawString for XCowsayDrawer {
 impl SetDisplay for XCowsayDrawer {
     fn set_foreground_color(&mut self, color: RgbColor) {
         // This is safe as per `XContext` guaranties
-        unsafe { xlib::XSetForeground(self.xcontext.display, self.xcontext.gc, color.into()); }
+        unsafe {
+            xlib::XSetForeground(self.xcontext.display, self.xcontext.gc, color.into());
+        }
     }
 
     fn reset_text_graphic(&mut self) {
@@ -251,20 +254,29 @@ impl SetCursor for XCowsayDrawer {
     fn set_cursor_vertical(&mut self, position: u32) {
         self.cursor_position.x = (position as i32) * self.char_width();
 
-        self.cursor_position.x = min(self.xcontext.window_attributes.width, self.cursor_position.x);
+        self.cursor_position.x = min(
+            self.xcontext.window_attributes.width,
+            self.cursor_position.x,
+        );
     }
 
     fn set_cursor_horizontal(&mut self, position: u32) {
         //TODO test if position needs to be adjusted by -1
         self.cursor_position.y = (position as i32) * self.line_height() + self.font_ascent();
 
-        self.cursor_position.y = min(self.xcontext.window_attributes.height - self.font_ascent(), self.cursor_position.y);
+        self.cursor_position.y = min(
+            self.xcontext.window_attributes.height - self.font_ascent(),
+            self.cursor_position.y,
+        );
     }
 
     fn move_cursor_horizontal(&mut self, by: i32) {
         self.cursor_position.y += by * self.line_height();
 
-        self.cursor_position.y = min(self.xcontext.window_attributes.height - self.font_ascent(), self.cursor_position.y);
+        self.cursor_position.y = min(
+            self.xcontext.window_attributes.height - self.font_ascent(),
+            self.cursor_position.y,
+        );
         self.cursor_position.y = max(self.font_ascent(), self.cursor_position.y);
     }
 }

@@ -32,7 +32,7 @@ fn main() {
 }
 
 fn setup_logger(opts: &Opt) {
-    let log_level = if opts.debug {
+    if opts.debug {
         stderrlog::new()
             .module(module_path!())
             .verbosity(3) //log::LevelFilter::Debug
@@ -40,8 +40,7 @@ fn setup_logger(opts: &Opt) {
             .init()
             .unwrap();
     } else {
-        simple_logging::log_to_file("/tmp/xcowsay-test.log", log::LevelFilter::Warn);
+        simple_logging::log_to_file("/tmp/xcowsay-test.log", log::LevelFilter::Warn)
+            .unwrap();
     };
-
-
 }
