@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 
-const COWSAY_AND_TOILET: &str = "fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term";
+const COWSAY_AND_LOLCAT: &str = "fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | lolcat -fas 50";
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "XCowsay", about = "Low-level screensaver that displays your favourite colorful terminal output and ASCII art", setting = clap::AppSettings::AllowLeadingHyphen)]
@@ -8,13 +8,12 @@ pub struct Opt {
     #[structopt(
         short,
         long,
-        default_value = COWSAY_AND_TOILET
+        default_value = COWSAY_AND_LOLCAT
     )]
     pub cmd: String,
     #[structopt(short, long, default_value = "5")]
-    pub delay: u64, // TODO type Duration
+    pub delay: u64,
     #[structopt(short, long, default_value = "-*-fixed-*-r-*-*-14-*-*-*-*-*-*-*")]
-    //TODO fix passing font string as argument
     pub font: String,
     #[structopt(short, long)]
     pub randomize: bool,

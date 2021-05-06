@@ -160,16 +160,24 @@ impl XCowsayParser {
                 }
 
                 CSI::CursorPosition { x, y } => {
-                    callback.set_cursor_vertical(x);
-                    callback.set_cursor_horizontal(y);
+                    callback.set_cursor_horizontal(x);
+                    callback.set_cursor_vertical(y);
                 }
 
                 CSI::CursorUp(by) => {
-                    callback.move_cursor_horizontal(-(by as i32));
+                    callback.move_cursor_vertical(-(by as i32));
                 }
 
                 CSI::CursorDown(by) => {
-                    callback.move_cursor_horizontal(by as i32);
+                    callback.move_cursor_vertical(by as i32);
+                }
+
+                CSI::CursorBack(by) => {
+                    callback.move_cursor_horizontal(-(by as i32));
+                }
+
+                CSI::CursorForward(by) => {
+                    callback.move_cursor_horizontal(-(by as i32));
                 }
 
                 _ => {
@@ -188,12 +196,12 @@ impl XCowsayParser {
     ) -> Result<(), ()> {
         match code {
             C0::LineFeed => {
-                callback.set_cursor_vertical(0);
-                callback.move_cursor_horizontal(1);
+                callback.set_cursor_horizontal(0);
+                callback.move_cursor_vertical(1);
                 Ok(())
             }
             C0::CarriageReturn => {
-                callback.set_cursor_vertical(0);
+                callback.set_cursor_horizontal(0);
                 Ok(())
             }
 

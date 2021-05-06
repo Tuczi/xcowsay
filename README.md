@@ -18,6 +18,12 @@ Try setup below command in settings:
 fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | toilet -F gay -f term
 ```
 
+or use `lolcat` animation: 
+
+```shell
+fortune -a | fmt -80 -s | $(shuf -n 1 -e cowsay cowthink) -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n | lolcat -fas 50
+```
+
 ## Requirements
 1. Cargo (Rust)
 2. libx11-dev

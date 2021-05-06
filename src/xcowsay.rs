@@ -14,7 +14,6 @@ use crate::xcontext::XContext;
 use crate::xdraw::XCowsayDrawer;
 use std::str::from_utf8;
 use std::time::Duration;
-use std::io::Error;
 
 pub struct XCowsay {
     xcontext: XContext,
@@ -28,17 +27,18 @@ pub trait SetDisplay {
     fn set_foreground_color(&mut self, color: RgbColor);
     fn reset_text_graphic(&mut self);
 
-    fn clear_line(&mut self, erase_mode: CSI::Erase); //TODO use type
-    fn clear_display(&mut self, erase_mode: CSI::Erase); //TODO use type
+    fn clear_line(&mut self, erase_mode: CSI::Erase); //TODO use custom type
+    fn clear_display(&mut self, erase_mode: CSI::Erase); //TODO use custom type
 
     fn delete_character(&mut self, count: u32);
 }
 
 pub trait SetCursor {
-    fn set_cursor_vertical(&mut self, position: u32);
     fn set_cursor_horizontal(&mut self, position: u32);
+    fn set_cursor_vertical(&mut self, position: u32);
 
     fn move_cursor_horizontal(&mut self, by: i32);
+    fn move_cursor_vertical(&mut self, by: i32);
 }
 
 pub trait DrawString {
