@@ -75,7 +75,19 @@ impl XCowsayParser {
                     i = text.len() - expr.len() - 1; //TODO doesn't work for utf-8
                     let c0_result = self.on_c0(code, callback); //TODO use better return type to signalize end of stream
                     if c0_result.is_err() {
-                        chars_read = i;
+                        // Workaround to "hide" unsupported sequence
+                        // if parser reports C0:Escape then read buffer till next letter - e.g. end of CSI sequence
+                        // One of the known missing CSI cods is "10" aka "default font" used by asciiquarium as "\x1B[0;10m"
+                        // This is safe as buffer is marked as Done (contains full sequence)
+                        if &text_slice[..2] == "\x1B[" {
+                            let end_of_csi = text_slice.find(|c| char::is_ascii_alphabetic(&c)).unwrap() + 1;
+                            log_unimplemented!(self, "ESC", &text_slice[..end_of_csi]);
+                            chars_read = i + end_of_csi;
+                        } else {
+                            log_unimplemented!(self, "ESC", text_slice);
+                            chars_read = i;
+                        }
+
                         break;
                     }
                 }
@@ -203,6 +215,11 @@ impl XCowsayParser {
             C0::CarriageReturn => {
                 callback.set_cursor_horizontal(0);
                 Ok(())
+            }
+
+            C0::Escape => {
+                // Can happen if parser does not support some CSI codes e.g. "\x1B[10m" - 10 means default font and its not supported
+                Err(())
             }
 
             C0::Null => Err(()),
