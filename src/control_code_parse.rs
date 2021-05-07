@@ -70,6 +70,11 @@ impl XCowsayParser {
             callback.print_text(&text[start..end]);
             i = end;
 
+            if i >= text.len() {
+                chars_read = text.len();
+                break;
+            }
+
             match parse_result {
                 IResult::Done(expr, Control::C0(code)) => {
                     i = text.len() - expr.len() - 1; //TODO doesn't work for utf-8
@@ -143,7 +148,14 @@ impl XCowsayParser {
                             }
 
                             SGR::Foreground(sgr_color) => {
-                                callback.set_foreground_color(RgbColor::from(sgr_color));
+                                callback.set_foreground_color(RgbColor::from(sgr_color, RgbColor::white()));
+                            }
+
+                            SGR::Background(SGR::Color::Default) => {
+                                //ignore for now as we always have Default=Black background
+                            }
+                            SGR::Background(SGR::Color::Index(0)) => {
+                                //ignore for now as we always have Index(0)=Black background
                             }
 
                             _ => {

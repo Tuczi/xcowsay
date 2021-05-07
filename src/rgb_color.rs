@@ -1,4 +1,3 @@
-use control_code::SGR;
 use control_code::SGR::Color;
 use std::os::raw::c_ulong;
 
@@ -45,17 +44,15 @@ impl RgbColor {
     pub fn black() -> RgbColor {
         RgbColor(0xFFFFFF)
     }
-}
 
-impl From<SGR::Color> for RgbColor {
-    fn from(sgr_color: Color) -> Self {
+    pub fn from(sgr_color: Color, default: RgbColor) -> Self {
         match sgr_color {
             Color::Index(index) => RgbColor(CSI_COLORS_MAP[index as usize]),
             Color::Rgb(r, g, b) => RgbColor(((r as u32) << 16) | ((g as u32) << 8) | (b as u32)),
-            Color::Default => RgbColor::black(), //TODO should it support different defaults for foreground and background?
+            Color::Default => default,
             _ => {
                 log::trace!("Unimplemented color format {:?}. Using default.", sgr_color);
-                RgbColor::black()
+                default
             }
         }
     }
