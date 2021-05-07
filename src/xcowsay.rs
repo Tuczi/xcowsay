@@ -70,6 +70,7 @@ impl XCowsay {
     //TODO I had to remove handling events as it looks like xfce-screensaver doesn't pass events and program hangs. Debug why
     pub fn start_xevent_loop(&mut self) {
         log::info!("Starting xevent loop");
+        self.setup_envs_for_curses();
         loop {
             self.drawer.prepare_new_frame();
 
@@ -79,7 +80,10 @@ impl XCowsay {
             }
 
             self.send_dummy_event();
-            log::info!("Command is fully processed. Going sleep for {:?}.", self.delay);
+            log::info!(
+                "Command is fully processed. Going sleep for {:?}.",
+                self.delay
+            );
             thread::sleep(self.delay);
         }
     }
@@ -120,5 +124,11 @@ impl XCowsay {
             // copy unparsed data to the beginning
             output.copy_leftovers(chars_parsed..len);
         }
+    }
+
+    /// Setup `COLUMNS` and `LINES` envs so curses libs can detect terminal width and height properly
+    fn setup_envs_for_curses(&self) {
+        std::env::set_var("LINES", self.drawer.max_lines().to_string());
+        std::env::set_var("COLUMNS", self.drawer.max_columns().to_string());
     }
 }

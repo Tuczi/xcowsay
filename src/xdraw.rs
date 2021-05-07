@@ -71,12 +71,22 @@ impl XCowsayDrawer {
         }
     }
 
+    pub fn max_lines(&self) -> i32 {
+        let max_height = self.xcontext.window_attributes.height;
+        max_height / self.line_height()
+    }
+
+    pub fn max_columns(&self) -> i32 {
+        let max_width = self.xcontext.window_attributes.width;
+        max_width / self.char_width()
+    }
+
     fn line_height(&self) -> i32 {
         let line_height = self.font_ascent() + self.font_descent();
         line_height
     }
 
-    fn char_width(&mut self) -> i32 {
+    fn char_width(&self) -> i32 {
         let single_char_str = CString::new(" ").unwrap(); // TODO handle error
                                                           // This is safe as we pass exact size of the text = 1
         let char_display_size =

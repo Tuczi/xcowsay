@@ -85,7 +85,8 @@ impl XCowsayParser {
                         // One of the known missing CSI cods is "10" aka "default font" used by asciiquarium as "\x1B[0;10m"
                         // This is safe as buffer is marked as Done (contains full sequence)
                         if &text_slice[..2] == "\x1B[" {
-                            let end_of_csi = text_slice.find(|c| char::is_ascii_alphabetic(&c)).unwrap() + 1;
+                            let end_of_csi =
+                                text_slice.find(|c| char::is_ascii_alphabetic(&c)).unwrap() + 1;
                             log_unimplemented!(self, "ESC", &text_slice[..end_of_csi]);
                             chars_read = i + end_of_csi;
                         } else {
@@ -148,7 +149,10 @@ impl XCowsayParser {
                             }
 
                             SGR::Foreground(sgr_color) => {
-                                callback.set_foreground_color(RgbColor::from(sgr_color, RgbColor::white()));
+                                callback.set_foreground_color(RgbColor::from(
+                                    sgr_color,
+                                    RgbColor::white(),
+                                ));
                             }
 
                             SGR::Background(SGR::Color::Default) => {

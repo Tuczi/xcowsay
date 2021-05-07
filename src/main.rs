@@ -40,7 +40,6 @@ fn setup_logger(opts: &Opt) {
             .init()
             .unwrap();
     } else {
-        simple_logging::log_to_file("/tmp/xcowsay-test.log", log::LevelFilter::Warn)
-            .unwrap();
+        simple_logging::log_to_file("/tmp/xcowsay-test.log", log::LevelFilter::Warn).unwrap();
     };
 }

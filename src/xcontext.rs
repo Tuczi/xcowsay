@@ -73,7 +73,10 @@ impl XContext {
             }
         }
 
-        log::warn!("Cannot open window for XSCREENSAVER_WINDOW={:?}. Using fallback to XDefaultRootWindow", window);
+        log::warn!(
+            "Cannot open window for XSCREENSAVER_WINDOW={:?}. Using fallback to XDefaultRootWindow",
+            window
+        );
         // This is safe as display is pre-validated
         unsafe { xlib::XDefaultRootWindow(display) }
     }
