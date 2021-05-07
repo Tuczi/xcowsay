@@ -47,7 +47,14 @@ impl RgbColor {
 
     pub fn from(sgr_color: Color, default: RgbColor) -> Self {
         match sgr_color {
-            Color::Index(index) => RgbColor(CSI_COLORS_MAP[index as usize]),
+            Color::Index(index) => {
+                if index == 0 {
+                    // without this `if` we would use black color even for foreground. TODO remove it once bold is implemented as that should make colo lighter
+                    default
+                } else {
+                    RgbColor(CSI_COLORS_MAP[index as usize])
+                }
+            }
             Color::Rgb(r, g, b) => RgbColor(((r as u32) << 16) | ((g as u32) << 8) | (b as u32)),
             Color::Default => default,
             _ => {
