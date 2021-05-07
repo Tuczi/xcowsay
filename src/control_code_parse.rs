@@ -205,7 +205,7 @@ impl XCowsayParser {
                 }
 
                 CSI::CursorForward(by) => {
-                    callback.move_cursor_horizontal(-(by as i32));
+                    callback.move_cursor_horizontal(by as i32);
                 }
 
                 _ => {
