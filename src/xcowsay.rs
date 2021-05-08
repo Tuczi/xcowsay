@@ -3,16 +3,13 @@ extern crate x11;
 use std::thread;
 
 use control_code::CSI;
-use x11::xlib;
 
-use self::x11::xlib::XEvent;
 use crate::command::{Command, CommandOutputIterator};
 use crate::config::Opt;
 use crate::control_code_parse::XCowsayParser;
 use crate::rgb_color::RgbColor;
 use crate::xcontext::XContext;
 use crate::xdraw::XCowsayDrawer;
-use std::str::from_utf8;
 use std::time::Duration;
 
 pub struct XCowsay {
@@ -50,7 +47,7 @@ impl XCowsay {
         let xcontext = XContext::new(&config);
         log::info!("XContext init: {:?}", xcontext);
         let drawer = XCowsayDrawer::new(&config, xcontext.clone());
-        let parser = XCowsayParser::new(&config);
+        let parser = XCowsayParser::new();
         let command = Command::new(&config);
         let delay = Duration::from_secs(config.delay);
 
@@ -67,10 +64,11 @@ impl XCowsay {
         self.xcontext.close();
     }
 
-    //TODO I had to remove handling events as it looks like xfce-screensaver doesn't pass events and program hangs. Debug why
-    pub fn start_xevent_loop(&mut self) {
-        log::info!("Starting xevent loop");
+    pub fn start_loop(&mut self) {
+        //I had to remove handling xevents as it looks like xfce-screensaver doesn't pass events and program hangs
+        log::info!("Starting main loop");
         self.setup_envs_for_curses();
+
         loop {
             self.drawer.prepare_new_frame();
 
@@ -79,7 +77,6 @@ impl XCowsay {
                 Err(e) => log::error!("Cannot start command: {:?}", e),
             }
 
-            self.send_dummy_event();
             log::info!(
                 "Command is fully processed. Going sleep for {:?}.",
                 self.delay
@@ -88,38 +85,11 @@ impl XCowsay {
         }
     }
 
-    fn send_dummy_event(&self) {
-        let dummy_event = xlib::XClientMessageEvent {
-            type_: xlib::ClientMessage,
-            serial: 0,
-            send_event: 0,
-            display: self.xcontext.display,
-            window: self.xcontext.window,
-            message_type: 0,
-            format: 32,
-            data: Default::default(),
-        }; //TODO how to distinguished this message from others e.g. exit event? XAtom?
-
-        let mut tmp: XEvent = dummy_event.into();
-
-        // This is safe as per `XContext` guaranties and dummy_event is not null
-        unsafe {
-            xlib::XSendEvent(self.xcontext.display, self.xcontext.window, 0, 0, &mut tmp);
-            xlib::XFlush(self.xcontext.display);
-        }
-    }
-
     fn parse_process_output(&mut self, output: &mut CommandOutputIterator) {
-        //TODO steam locomotive
-        // looks like cursor is updated improperly - check where its updated (e.g. display raw text)
-
         while let Some(read_bytes) = output.read() {
-            let text = from_utf8(read_bytes).unwrap(); //TODO handle error
-
-            let chars_parsed = self.parser.parse(&text, &mut self.drawer);
+            let chars_parsed = self.parser.parse(&read_bytes, &mut self.drawer);
             self.drawer.flush();
 
-            //TODO doesn't work for utf-8
             let len = read_bytes.len();
             // copy unparsed data to the beginning
             output.copy_leftovers(chars_parsed..len);

@@ -4,11 +4,11 @@ use control_code::CSI;
 use control_code::SGR;
 use control_code::{Control, C0};
 
-use crate::config::Opt;
 use crate::rgb_color::RgbColor;
 use crate::xcowsay::{DrawString, SetCursor, SetDisplay};
 
 use std::collections::HashMap;
+use std::str::from_utf8;
 
 pub struct XCowsayParser {
     unimplemented_codes: HashMap<String, u32>,
@@ -34,7 +34,7 @@ macro_rules! log_unimplemented {
 }
 
 impl XCowsayParser {
-    pub fn new(config: &Opt) -> XCowsayParser {
+    pub fn new() -> XCowsayParser {
         XCowsayParser {
             unimplemented_codes: HashMap::new(),
         }
@@ -43,11 +43,13 @@ impl XCowsayParser {
     /// Returns number of bytes read from `text` slice
     pub fn parse<T: DrawString + SetDisplay + SetCursor>(
         &mut self,
-        text: &str,
+        bytes: &[u8],
         callback: &mut T,
     ) -> usize {
+        //TODO refactor this function to operate on bytes
+        let text = from_utf8(bytes).unwrap(); //TODO handle error
         let mut i = 0;
-        let mut chars_read = 0;
+        let chars_read ;
         loop {
             if i >= text.len() {
                 chars_read = text.len();
@@ -57,7 +59,7 @@ impl XCowsayParser {
             let mut text_slice = &text[i..text.len()];
             let mut parse_result = control_code::parse(text_slice.as_bytes());
 
-            // while plain text...
+            // while plain text... TODO move plain_text reading to separate function
             let start = i;
             let mut end = start;
             while IResult::Error(ErrorKind::Custom(0)) == parse_result {
@@ -144,73 +146,37 @@ impl XCowsayParser {
                 CSI::SelectGraphicalRendition(sgrs) => {
                     for sgr in sgrs {
                         match sgr {
-                            SGR::Reset => {
-                                callback.reset_text_graphic();
-                            }
-
+                            SGR::Reset => callback.reset_text_graphic(),
                             SGR::Foreground(sgr_color) => {
                                 callback.set_foreground_color(RgbColor::from(
                                     sgr_color,
                                     RgbColor::white(),
                                 ));
                             }
-
                             SGR::Background(SGR::Color::Default) => {
                                 //ignore for now as we always have Default=Black background
                             }
                             SGR::Background(SGR::Color::Index(0)) => {
                                 //ignore for now as we always have Index(0)=Black background
                             }
-
-                            _ => {
-                                log_unimplemented!(self, "C1 SGR", sgr);
-                            }
+                            _ => log_unimplemented!(self, "C1 SGR", sgr),
                         }
                     }
                 }
-                CSI::EraseDisplay(erase_mode) => {
-                    callback.clear_display(erase_mode);
-                }
-                CSI::EraseLine(erase_mode) => {
-                    callback.clear_line(erase_mode);
-                }
-
-                CSI::DeleteCharacter(count) => {
-                    callback.delete_character(count);
-                }
-
-                CSI::CursorVerticalPosition(position) => {
-                    callback.set_cursor_vertical(position);
-                }
-
-                CSI::CursorHorizontalPosition(position) => {
-                    callback.set_cursor_horizontal(position);
-                }
-
+                CSI::EraseDisplay(erase_mode) => callback.clear_display(erase_mode),
+                CSI::EraseLine(erase_mode) => callback.clear_line(erase_mode),
+                CSI::DeleteCharacter(count) => callback.delete_character(count),
+                CSI::CursorVerticalPosition(position) => callback.set_cursor_vertical(position),
+                CSI::CursorHorizontalPosition(position) => callback.set_cursor_horizontal(position),
                 CSI::CursorPosition { x, y } => {
                     callback.set_cursor_horizontal(x);
                     callback.set_cursor_vertical(y);
                 }
-
-                CSI::CursorUp(by) => {
-                    callback.move_cursor_vertical(-(by as i32));
-                }
-
-                CSI::CursorDown(by) => {
-                    callback.move_cursor_vertical(by as i32);
-                }
-
-                CSI::CursorBack(by) => {
-                    callback.move_cursor_horizontal(-(by as i32));
-                }
-
-                CSI::CursorForward(by) => {
-                    callback.move_cursor_horizontal(by as i32);
-                }
-
-                _ => {
-                    log_unimplemented!(self, "C1 CSI", csi);
-                }
+                CSI::CursorUp(by) => callback.move_cursor_vertical(-(by as i32)),
+                CSI::CursorDown(by) => callback.move_cursor_vertical(by as i32),
+                CSI::CursorBack(by) => callback.move_cursor_horizontal(-(by as i32)),
+                CSI::CursorForward(by) => callback.move_cursor_horizontal(by as i32),
+                _ => log_unimplemented!(self, "C1 CSI", csi),
             }
         } else {
             log_unimplemented!(self, "C1", code);
@@ -232,12 +198,10 @@ impl XCowsayParser {
                 callback.set_cursor_horizontal(0);
                 Ok(())
             }
-
             C0::Escape => {
                 // Can happen if parser does not support some CSI codes e.g. "\x1B[10m" - 10 means default font and its not supported
                 Err(())
             }
-
             C0::Null => Err(()),
             _ => {
                 log_unimplemented!(self, "C0", code);

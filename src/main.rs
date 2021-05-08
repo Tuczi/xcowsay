@@ -8,8 +8,8 @@ mod xcontext;
 mod xcowsay;
 mod xdraw;
 
-//TODO support
-// - `sl` steam locomotive (right now cursor moving is problematic - not sure if curses.h reads screen size properly)
+//TODO fix some small bugs in:
+// - `sl` steam locomotive
 // - `asciiquarium`
 
 fn main() {
@@ -18,7 +18,7 @@ fn main() {
     let result = std::panic::catch_unwind(|| {
         let mut xcowsay = xcowsay::XCowsay::new(opts);
         log::info!("Xcowsay init finished");
-        xcowsay.start_xevent_loop();
+        xcowsay.start_loop();
         log::info!("xevent loop finished");
         xcowsay.close();
         log::info!("xevent closed");

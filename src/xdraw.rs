@@ -264,6 +264,7 @@ impl SetCursor for XCowsayDrawer {
     fn set_cursor_horizontal(&mut self, position: u32) {
         self.cursor_position.x = (position as i32) * self.char_width();
 
+        // correct position if cursor is on edge
         self.cursor_position.x = min(
             self.xcontext.window_attributes.width,
             self.cursor_position.x,
@@ -273,6 +274,7 @@ impl SetCursor for XCowsayDrawer {
     fn set_cursor_vertical(&mut self, position: u32) {
         self.cursor_position.y = (position as i32) * self.line_height() + self.font_ascent();
 
+        // correct position if cursor is on edge
         self.cursor_position.y = min(
             self.xcontext.window_attributes.height - self.font_ascent(),
             self.cursor_position.y,
@@ -282,6 +284,7 @@ impl SetCursor for XCowsayDrawer {
     fn move_cursor_horizontal(&mut self, by: i32) {
         self.cursor_position.x += by * self.char_width();
 
+        // correct position if cursor is on edge
         self.cursor_position.x = min(
             self.xcontext.window_attributes.width,
             self.cursor_position.x,
@@ -292,6 +295,7 @@ impl SetCursor for XCowsayDrawer {
     fn move_cursor_vertical(&mut self, by: i32) {
         self.cursor_position.y += by * self.line_height();
 
+        // correct position if cursor is on edge
         self.cursor_position.y = min(
             self.xcontext.window_attributes.height - self.font_ascent(),
             self.cursor_position.y,

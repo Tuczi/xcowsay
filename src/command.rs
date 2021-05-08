@@ -15,6 +15,8 @@ impl Command {
         }
     }
 
+    /// Starts new process in the background and returns iterator over it's stdout.
+    /// Returns `Err` if process cannot be started.
     pub fn start_process_command(&self) -> std::io::Result<CommandOutputIterator> {
         let child = std::process::Command::new("sh")
             .arg("-c")
@@ -91,11 +93,12 @@ impl CommandOutputIterator {
         };
     }
 
-    /// Copies buffer `range` to the beginning so next read can return that
+    /// Copies unconsumed buffer `range` to the beginning of the buffer.
+    /// Next `read` call will return that data in the beginning of the buffer.
     ///
-    /// Dev notes:
+    /// # Dev notes
     /// Just copy the data instead of using some fancy data structure like ringbuffer.
-    /// This is usually less than 5-10 bytes so there is no performance differance and implementation is simple.
+    /// There are usually less than 5-10 bytes so there is no performance differance but "copy" implementation is simpler.
     pub fn copy_leftovers(&mut self, range: Range<usize>) {
         for i in 0..range.len() {
             self.buffer[i] = self.buffer[range.start + i];

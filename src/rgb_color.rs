@@ -37,12 +37,12 @@ const CSI_COLORS_MAP: [u32; CSI_COLORS_SIZE] = [
 pub struct RgbColor(u32);
 
 impl RgbColor {
-    pub fn white() -> RgbColor {
+    pub const fn white() -> RgbColor {
         RgbColor(0xFFFFFF)
     }
 
-    pub fn black() -> RgbColor {
-        RgbColor(0xFFFFFF)
+    pub const fn black() -> RgbColor {
+        RgbColor(0x000000)
     }
 
     pub fn from(sgr_color: Color, default: RgbColor) -> Self {
@@ -57,8 +57,17 @@ impl RgbColor {
             }
             Color::Rgb(r, g, b) => RgbColor(((r as u32) << 16) | ((g as u32) << 8) | (b as u32)),
             Color::Default => default,
+            Color::Transparent => {
+                //TODO implement Transparent color eventually.
+                log::warn!("Unimplemented transparent color. Using default.");
+                default
+            }
             _ => {
-                log::trace!("Unimplemented color format {:?}. Using default.", sgr_color);
+                // It is simple to implement CMY/CMYK conversion but hard to google if it is 0-100 range or 0-255
+                log::debug!(
+                    "Ignoring CMY/CMYK as they are not supported in many terminals. {:?}",
+                    sgr_color
+                );
                 default
             }
         }
