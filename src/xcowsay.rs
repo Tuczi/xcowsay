@@ -2,8 +2,6 @@ extern crate x11;
 
 use std::thread;
 
-use control_code::CSI;
-
 use crate::command::{Command, CommandOutputIterator};
 use crate::config::Opt;
 use crate::control_code_parse::XCowsayParser;
@@ -20,12 +18,19 @@ pub struct XCowsay {
     delay: Duration,
 }
 
+#[derive(Debug)]
+pub enum EraseMode {
+    ToEnd,
+    ToStart,
+    All,
+}
+
 pub trait SetDisplay {
     fn set_foreground_color(&mut self, color: RgbColor);
     fn reset_text_graphic(&mut self);
 
-    fn clear_line(&mut self, erase_mode: CSI::Erase); //TODO use custom type
-    fn clear_display(&mut self, erase_mode: CSI::Erase); //TODO use custom type
+    fn clear_line(&mut self, erase_mode: EraseMode);
+    fn clear_display(&mut self, erase_mode: EraseMode);
 
     fn delete_character(&mut self, count: u32);
 }

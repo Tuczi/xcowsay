@@ -5,10 +5,11 @@ use control_code::SGR;
 use control_code::{Control, C0};
 
 use crate::rgb_color::RgbColor;
-use crate::xcowsay::{DrawString, SetCursor, SetDisplay};
+use crate::xcowsay::{DrawString, SetCursor, SetDisplay, EraseMode};
 
 use std::collections::HashMap;
 use std::str::from_utf8;
+use control_code::CSI::Erase;
 
 pub struct XCowsayParser {
     unimplemented_codes: HashMap<String, u32>,
@@ -31,6 +32,16 @@ macro_rules! log_unimplemented {
                 .or_insert(0) += 1;
         }
     }};
+}
+
+impl From<CSI::Erase> for EraseMode {
+    fn from(value: CSI::Erase) -> Self {
+        match value {
+            Erase::ToEnd => EraseMode::ToEnd,
+            Erase::ToStart => EraseMode::ToStart,
+            Erase::All => EraseMode::All,
+        }
+    }
 }
 
 impl XCowsayParser {
@@ -163,8 +174,8 @@ impl XCowsayParser {
                         }
                     }
                 }
-                CSI::EraseDisplay(erase_mode) => callback.clear_display(erase_mode),
-                CSI::EraseLine(erase_mode) => callback.clear_line(erase_mode),
+                CSI::EraseDisplay(erase_mode) => callback.clear_display(erase_mode.into()),
+                CSI::EraseLine(erase_mode) => callback.clear_line(erase_mode.into()),
                 CSI::DeleteCharacter(count) => callback.delete_character(count),
                 CSI::CursorVerticalPosition(position) => callback.set_cursor_vertical(position),
                 CSI::CursorHorizontalPosition(position) => callback.set_cursor_horizontal(position),

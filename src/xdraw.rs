@@ -5,15 +5,15 @@ use x11::xlib;
 use crate::config::Opt;
 use crate::rgb_color::RgbColor;
 use crate::xcontext::XContext;
-use crate::xcowsay::{DrawString, SetCursor, SetDisplay};
-use control_code::CSI::Erase;
+use crate::xcowsay::{DrawString, SetCursor, SetDisplay, EraseMode};
 use rand::random;
 use std::cmp::{max, min};
 use x11::xlib::XFontStruct;
 
-// Cursor position in pixels
+/// Cursor position in pixels
+/// Position (0, 0) represent left top corner of the screen
 struct CursorPosition {
-    x: i32, //i32 for compatibility with c interface of xlib TODO change it back to u32? looks like casting is required sometimes anyway...
+    x: i32, //i32 for compatibility with c interface of xlib TODO consider changing it back to u32? looks like casting is required anyway
     y: i32,
 }
 
@@ -156,12 +156,12 @@ impl SetDisplay for XCowsayDrawer {
         self.set_foreground_color(RgbColor::white());
     }
 
-    fn clear_line(&mut self, erase_mode: Erase) {
+    fn clear_line(&mut self, erase_mode: EraseMode) {
         let line_height = self.line_height();
         // This is safe as per `XContext` guaranties
         unsafe {
             match erase_mode {
-                Erase::ToEnd => {
+                EraseMode::ToEnd => {
                     xlib::XClearArea(
                         self.xcontext.display,
                         self.xcontext.window,
@@ -172,7 +172,7 @@ impl SetDisplay for XCowsayDrawer {
                         0,
                     );
                 }
-                Erase::ToStart => {
+                EraseMode::ToStart => {
                     xlib::XClearArea(
                         self.xcontext.display,
                         self.xcontext.window,
@@ -183,7 +183,7 @@ impl SetDisplay for XCowsayDrawer {
                         0,
                     );
                 }
-                Erase::All => {
+                EraseMode::All => {
                     xlib::XClearArea(
                         self.xcontext.display,
                         self.xcontext.window,
@@ -198,13 +198,13 @@ impl SetDisplay for XCowsayDrawer {
         }
     }
 
-    fn clear_display(&mut self, erase_mode: Erase) {
+    fn clear_display(&mut self, erase_mode: EraseMode) {
         let line_height = self.line_height();
         // This is safe as per `XContext` guaranties
         unsafe {
             match erase_mode {
-                Erase::ToEnd => {
-                    self.clear_line(Erase::ToEnd);
+                EraseMode::ToEnd => {
+                    self.clear_line(EraseMode::ToEnd);
 
                     xlib::XClearArea(
                         self.xcontext.display,
@@ -216,8 +216,8 @@ impl SetDisplay for XCowsayDrawer {
                         0,
                     );
                 }
-                Erase::ToStart => {
-                    self.clear_line(Erase::ToStart);
+                EraseMode::ToStart => {
+                    self.clear_line(EraseMode::ToStart);
 
                     xlib::XClearArea(
                         self.xcontext.display,
@@ -229,7 +229,7 @@ impl SetDisplay for XCowsayDrawer {
                         0,
                     );
                 }
-                Erase::All => {
+                EraseMode::All => {
                     xlib::XClearWindow(self.xcontext.display, self.xcontext.window);
                 }
             }

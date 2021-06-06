@@ -48,7 +48,11 @@ impl RgbColor {
     pub fn from(sgr_color: Color, default: RgbColor) -> Self {
         match sgr_color {
             Color::Index(index) => {
-                if index == 0 {
+                // Technically only default color and code colors from range 30-37 and 40-47 should become brighter with bold option so
+                // "\x1B[1;31m" should become color from index 9 (1+8) but "\x1B[38;5;1m" should stay the same (color from index 1).
+                // so this implementation has a bug for the second variant that I don't want to fix now as `control_code` lib does not distinguish that
+                // TODO add second field to RgbColor - bold_color
+                if index == 8 {
                     // without this `if` we would use black color even for foreground. TODO remove it once bold is implemented as that should make colo lighter
                     default
                 } else {
