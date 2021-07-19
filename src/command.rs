@@ -40,9 +40,9 @@ impl Command {
     }
 }
 
-const BUFFER_SIZE: usize = 1 * 1024;
+const BUFFER_SIZE: usize = 1024;
 
-/// Custom iterator over `process` `stdout` that uses fixed `buffer`
+/// Custom iterator over `process`'s `stdout` that uses fixed size byte `buffer`.
 pub struct CommandOutputIterator {
     buffer: [u8; BUFFER_SIZE],
     buffer_read_start: usize,

@@ -5,20 +5,21 @@ use x11::xlib;
 use crate::config::Opt;
 use crate::rgb_color::RgbColor;
 use crate::xcontext::XContext;
-use crate::xcowsay::{DrawString, SetCursor, SetDisplay, EraseMode};
+use crate::xcowsay::{DrawString, EraseMode, SetCursor, SetDisplay};
 use rand::random;
 use std::cmp::{max, min};
 use x11::xlib::XFontStruct;
 
-/// Cursor position in pixels
-/// Position (0, 0) represent left top corner of the screen
+/// Cursor position in pixels.
+/// Position (0, 0) represent left top corner of the screen.
 struct CursorPosition {
     x: i32, //i32 for compatibility with c interface of xlib TODO consider changing it back to u32? looks like casting is required anyway
     y: i32,
 }
 
+/// Stores drawing context and provides abstraction layer for xlib.
 pub struct XCowsayDrawer {
-    xcontext: XContext, //TODO pass reference here and remove Clone from XContext! or even better move ownership here as XCowsay might not need xcontext at all
+    xcontext: XContext,
     cursor_position: CursorPosition,
     pub random_new_cursor_position: bool,
 }
@@ -45,6 +46,7 @@ impl XCowsayDrawer {
         }
     }
 
+    /// Clears window and reset graphic attributes for a new frame
     pub fn prepare_new_frame(&mut self) {
         // This is safe as per `XContext` guaranties
         unsafe {
@@ -64,6 +66,7 @@ impl XCowsayDrawer {
         self.set_new_cursor_position();
     }
 
+    /// Flushes xlib display
     pub fn flush(&self) {
         // This is safe as per `XContext` guaranties
         unsafe {
@@ -71,27 +74,27 @@ impl XCowsayDrawer {
         }
     }
 
+    /// Returns maximum number of lines that can be used on display
     pub fn max_lines(&self) -> i32 {
         let max_height = self.xcontext.window_attributes.height;
         max_height / self.line_height()
     }
 
+    /// Returns maximum number of columns that can be used on display
     pub fn max_columns(&self) -> i32 {
         let max_width = self.xcontext.window_attributes.width;
         max_width / self.char_width()
     }
 
     fn line_height(&self) -> i32 {
-        let line_height = self.font_ascent() + self.font_descent();
-        line_height
+        self.font_ascent() + self.font_descent()
     }
 
     fn char_width(&self) -> i32 {
         let single_char_str = CString::new(" ").unwrap(); // TODO handle error
-                                                          // This is safe as we pass exact size of the text = 1
-        let char_display_size =
-            unsafe { xlib::XTextWidth(self.xcontext.font, single_char_str.as_ptr(), 1) };
-        char_display_size
+
+        // This is safe as we pass exact size of the text = 1
+        unsafe { xlib::XTextWidth(self.xcontext.font, single_char_str.as_ptr(), 1) }
     }
 
     fn font(&self) -> XFontStruct {

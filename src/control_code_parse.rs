@@ -5,11 +5,11 @@ use control_code::SGR;
 use control_code::{Control, C0};
 
 use crate::rgb_color::RgbColor;
-use crate::xcowsay::{DrawString, SetCursor, SetDisplay, EraseMode};
+use crate::xcowsay::{DrawString, EraseMode, SetCursor, SetDisplay};
 
+use control_code::CSI::Erase;
 use std::collections::HashMap;
 use std::str::from_utf8;
-use control_code::CSI::Erase;
 
 pub struct XCowsayParser {
     unimplemented_codes: HashMap<String, u32>,
@@ -51,7 +51,8 @@ impl XCowsayParser {
         }
     }
 
-    /// Returns number of bytes read from `text` slice
+    /// Parses `bytes` sequence and delegates proper actions to `callback`.
+    /// Returns number of bytes read from `text` slice.
     pub fn parse<T: DrawString + SetDisplay + SetCursor>(
         &mut self,
         bytes: &[u8],
@@ -60,7 +61,7 @@ impl XCowsayParser {
         //TODO refactor this function to operate on bytes
         let text = from_utf8(bytes).unwrap(); //TODO handle error
         let mut i = 0;
-        let chars_read ;
+        let chars_read;
         loop {
             if i >= text.len() {
                 chars_read = text.len();

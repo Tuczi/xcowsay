@@ -11,7 +11,6 @@ use crate::xdraw::XCowsayDrawer;
 use std::time::Duration;
 
 pub struct XCowsay {
-    xcontext: XContext,
     drawer: XCowsayDrawer,
     parser: XCowsayParser,
     command: Command,
@@ -25,6 +24,7 @@ pub enum EraseMode {
     All,
 }
 
+/// Interface for display graphic manipulation.
 pub trait SetDisplay {
     fn set_foreground_color(&mut self, color: RgbColor);
     fn reset_text_graphic(&mut self);
@@ -35,6 +35,7 @@ pub trait SetDisplay {
     fn delete_character(&mut self, count: u32);
 }
 
+/// Interface for cursor position manipulation.
 pub trait SetCursor {
     fn set_cursor_horizontal(&mut self, position: u32);
     fn set_cursor_vertical(&mut self, position: u32);
@@ -43,6 +44,7 @@ pub trait SetCursor {
     fn move_cursor_vertical(&mut self, by: i32);
 }
 
+/// Interface for drawing plain string.
 pub trait DrawString {
     fn print_text(&mut self, text: &str);
 }
@@ -51,13 +53,12 @@ impl XCowsay {
     pub fn new(config: Opt) -> XCowsay {
         let xcontext = XContext::new(&config);
         log::info!("XContext init: {:?}", xcontext);
-        let drawer = XCowsayDrawer::new(&config, xcontext.clone());
+        let drawer = XCowsayDrawer::new(&config, xcontext);
         let parser = XCowsayParser::new();
         let command = Command::new(&config);
         let delay = Duration::from_secs(config.delay);
 
         XCowsay {
-            xcontext,
             drawer,
             parser,
             command,
@@ -65,10 +66,11 @@ impl XCowsay {
         }
     }
 
-    pub fn close(&self) {
-        self.xcontext.close();
-    }
-
+    /// Starts main draw loop:
+    /// 1. Run command
+    /// 1. Read and parse command's output
+    /// 1. Draw
+    /// 1. Sleep
     pub fn start_loop(&mut self) {
         //I had to remove handling xevents as it looks like xfce-screensaver doesn't pass events and program hangs
         log::info!("Starting main loop");

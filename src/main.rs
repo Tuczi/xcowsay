@@ -8,7 +8,6 @@ mod xcontext;
 mod xcowsay;
 mod xdraw;
 
-
 //TODO implement Bold SGR (and braightning that color a bit) e.g. like this https://github.com/kovidgoyal/kitty/pull/3234/files
 //TODO fix some small bugs in:
 // - `sl` steam locomotive
@@ -22,8 +21,6 @@ fn main() {
         log::info!("Xcowsay init finished");
         xcowsay.start_loop();
         log::info!("xevent loop finished");
-        xcowsay.close();
-        log::info!("xevent closed");
     });
 
     if result.is_err() {

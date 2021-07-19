@@ -59,8 +59,7 @@ impl XContext {
         }
 
         let window = std::env::var("XSCREENSAVER_WINDOW");
-        if window.is_ok() {
-            let window = window.unwrap();
+        if let Ok(window) = window {
             let tmp = CString::new(window).unwrap();
 
             // This is safe as tmp is not null
@@ -134,8 +133,10 @@ impl XContext {
             font,
         }
     }
+}
 
-    pub fn close(&self) {
+impl Drop for XContext {
+    fn drop(&mut self) {
         // This is safe as display is not null
         unsafe {
             xlib::XCloseDisplay(self.display);

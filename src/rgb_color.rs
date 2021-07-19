@@ -34,6 +34,10 @@ const CSI_COLORS_MAP: [u32; CSI_COLORS_SIZE] = [
     0xd0d0d0, 0xdadada, 0xe4e4e4, 0xeeeeee,
 ];
 
+/// Represents RGB color as 24-bit integer value (8-bit per color).
+///
+/// # Dev notes
+/// 24-bit value is stored on less significant bits of `u32`.
 pub struct RgbColor(u32);
 
 impl RgbColor {
@@ -45,6 +49,7 @@ impl RgbColor {
         RgbColor(0x000000)
     }
 
+    /// Converts `control-code::sgr::Color` into `RgbColor`.
     pub fn from(sgr_color: Color, default: RgbColor) -> Self {
         match sgr_color {
             Color::Index(index) => {

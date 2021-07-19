@@ -91,7 +91,7 @@ E.g.: `cargo run -- -D -d 5 -c 'echo "Hello \e[31;42mXCowsay\e[0;32m (debug mode
 
 ## Development
 Style:
-1. Use `rustfmt` code style.
+1. Use `rustfmt` code style and `clippy`.
 2. Add blank line in the end of files.
 
 # TODO list:
