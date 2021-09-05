@@ -1,5 +1,3 @@
-extern crate x11;
-
 use std::thread;
 
 use crate::command::{Command, CommandOutputIterator};
@@ -94,7 +92,7 @@ impl XCowsay {
 
     fn parse_process_output(&mut self, output: &mut CommandOutputIterator) {
         while let Ok(Some(read_bytes)) = output.read() {
-            let chars_parsed = self.parser.parse(&read_bytes, &mut self.drawer);
+            let chars_parsed = self.parser.parse(read_bytes, &mut self.drawer);
             self.drawer.flush();
 
             let len = read_bytes.len();

@@ -102,8 +102,10 @@ impl XContext {
     fn read_window_attributes(display: *mut Display, window: XWindow) -> XWindowAttributes {
         // This is safe as display and window are pre-validated and not null
         unsafe {
+            #[allow(clippy::uninit_assumed_init)]
+            // It is init in the next line using XGetWindowAttributes
             let mut window_attributes: xlib::XWindowAttributes =
-                mem::MaybeUninit::uninit().assume_init(); // It is init in the next line using XGetWindowAttributes
+                mem::MaybeUninit::uninit().assume_init();
             xlib::XGetWindowAttributes(display, window, &mut window_attributes);
 
             window_attributes
@@ -120,7 +122,7 @@ impl XContext {
 
         // This is safe as display is pre-validated
         let gc = unsafe { xlib::XCreateGC(display, window, 0, std::ptr::null_mut()) };
-        let font = XContext::load_font(display, gc, &config);
+        let font = XContext::load_font(display, gc, config);
 
         let window_attributes = XContext::read_window_attributes(display, window);
 

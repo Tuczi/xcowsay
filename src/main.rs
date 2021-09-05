@@ -1,3 +1,15 @@
+#![warn(
+rust_2018_idioms,
+future_incompatible,
+nonstandard_style,
+unused,
+//rust-2021-compatibility,
+clippy::all,
+// clippy::pedantic, //TODO enable?
+// clippy::cargo, // TODO enable
+// missing_docs, // TODO enable
+)]
+#![deny(warnings)]
 use crate::config::Opt;
 
 mod command;
