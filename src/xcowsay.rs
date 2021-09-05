@@ -55,7 +55,7 @@ impl XCowsay {
         log::info!("XContext init: {:?}", xcontext);
         let drawer = XCowsayDrawer::new(&config, xcontext);
         let parser = XCowsayParser::new();
-        let command = Command::new(&config);
+        let command = Command::new(config.cmd.clone());
         let delay = Duration::from_secs(config.delay);
 
         XCowsay {
@@ -93,7 +93,7 @@ impl XCowsay {
     }
 
     fn parse_process_output(&mut self, output: &mut CommandOutputIterator) {
-        while let Some(read_bytes) = output.read() {
+        while let Ok(Some(read_bytes)) = output.read() {
             let chars_parsed = self.parser.parse(&read_bytes, &mut self.drawer);
             self.drawer.flush();
 

@@ -1,18 +1,15 @@
-use crate::config::Opt;
 use std::io::Read;
 use std::ops::Range;
 use std::process::{Child, ChildStdout, Stdio};
+use thiserror::Error;
 
 pub struct Command {
     cmd: String,
 }
 
-// TODO Create trait to support hexagonal architecture
 impl Command {
-    pub fn new(config: &Opt) -> Command {
-        Command {
-            cmd: config.cmd.clone(),
-        }
+    pub fn new(cmd: String) -> Command {
+        Command { cmd }
     }
 
     /// Starts new process in the background and returns iterator over it's stdout.
@@ -50,10 +47,21 @@ pub struct CommandOutputIterator {
     stdout: ChildStdout,
 }
 
+#[derive(Debug, Error)]
+pub enum CommandOutputIteratorError {
+    #[error("Cannot check process status: {0}")]
+    CheckProcessStatusFailed(std::io::Error),
+    #[error("Cannot read process output: {0}")]
+    ReadFailed(std::io::Error),
+}
+
 impl CommandOutputIterator {
-    /// Reads available `stdout` as `Some<&[u8]>`.
-    /// Returns `None` if there is no more data to read
-    pub fn read(&mut self) -> Option<&[u8]> {
+    /// Reads and returns available `stdout` of command process as `Ok(Some<&[u8]>)` if process is still running or some data is available.
+    /// Returns `Some(None)` if command process finished and there is 0 bytes available to read.
+    /// Method automatically kills command process and returns `Err(CommandOutputIteratorError)` if error occurred while checking command process status or reading data.
+    ///
+    /// Note that `Ok(Some(&[]))` is possible if there is no new data available in the buffer but process is still running
+    pub fn read(&mut self) -> Result<Option<&[u8]>, CommandOutputIteratorError> {
         let process_status = self.process.try_wait();
         let process_finished = match process_status {
             Ok(process_status) => process_status.is_some(),
@@ -64,18 +72,18 @@ impl CommandOutputIterator {
                     e,
                     kill_result
                 );
-                return None;
+                return Err(CommandOutputIteratorError::CheckProcessStatusFailed(e));
             }
         };
 
         return match self.stdout.read(&mut self.buffer[self.buffer_read_start..]) {
             Ok(read_bytes) => {
                 if process_finished && read_bytes == 0 {
-                    return None; // end of process and it's output
+                    return Ok(None); // end of process and it's output
                 }
 
                 let end_of_buffer = self.buffer_read_start + read_bytes;
-                Some(&self.buffer[..end_of_buffer])
+                Ok(Some(&self.buffer[..end_of_buffer]))
             }
             Err(e) => {
                 if process_finished {
@@ -88,7 +96,7 @@ impl CommandOutputIterator {
                         kill_result
                     );
                 }
-                None
+                Err(CommandOutputIteratorError::ReadFailed(e))
             }
         };
     }
@@ -105,5 +113,44 @@ impl CommandOutputIterator {
         }
 
         self.buffer_read_start = range.len();
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_start_simple_process_and_read_output() {
+        let mut command_output = start_command("echo hello");
+
+        let first_read = command_output.read().unwrap().unwrap();
+
+        assert_eq!(b"hello\n", first_read);
+
+        while let Some(output) = command_output.read().unwrap() {
+            assert!(output.is_empty()); //TODO how to match empty slice better?
+        }
+
+        let last_read = command_output.read().unwrap();
+        assert_eq!(None, last_read);
+    }
+
+    fn start_command(cmd: &str) -> CommandOutputIterator {
+        let mut command_output = Command::new(cmd.to_owned())
+            .start_process_command()
+            .unwrap();
+        command_output
+    }
+
+    #[test]
+    fn should_await_till_process_finish() {
+        let mut command_output = start_command("sleep 0.1");
+
+        let first_read = command_output.read().unwrap();
+
+        // TODO first should be Some(empty slice)
+
+        todo!("implement waiting until None");
     }
 }
