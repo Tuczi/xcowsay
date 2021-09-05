@@ -3,6 +3,11 @@ name = "xcowsay"
 version = "0.1.0"
 authors = ["Tomasz Kuczma <tuczi007@gmail.com>"]
 edition = "2018"
+description = "xcowsay allows you to run ANY Linux command (e.g. `fortune | cowsay`) and display the output as your screensaver (XScreenSaver or xfce4-screensaver)"
+repository = "https://github.com/Tuczi/xcowsay"
+license = "Apache-2.0"
+keywords = ["screensaver", "terminal", "x11", "graphics", "asciiart"]
+categories = ["emulators", "graphics", "parsing"]
 
 [dependencies]
 x11 = { version = "2.18.2", features = ["xlib"] }

@@ -3,13 +3,24 @@ rust_2018_idioms,
 future_incompatible,
 nonstandard_style,
 unused,
-//rust-2021-compatibility,
+rust_2021_compatibility,
 clippy::all,
 // clippy::pedantic, //TODO enable?
-// clippy::cargo, // TODO enable
-// missing_docs, // TODO enable
+clippy::cargo,
+missing_docs,
 )]
 #![deny(warnings)]
+//! `fortune | cowsay` as screensaver in XScreenSaver and xfce4-screensaver!
+//!
+//! xcowsay allows you to run **ANY** Linux command and display the output as your screensaver.
+//! Command will be refreshed (rerun) by xcowsay automatically.
+//!
+//! It supports:
+//! 1. Colorful text output (CSI codes)
+//! 2. Refreshing and animations
+//! 3. Multiple fonts
+//!
+//! For details see [`README.md`](https://github.com/Tuczi/xcowsay/blob/master/README.md)
 use crate::config::Opt;
 
 mod command;
