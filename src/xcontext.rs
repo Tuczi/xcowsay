@@ -112,8 +112,8 @@ impl XContext {
         }
     }
 
-    /// Creates new XContext with all necessary fields for drawing.
-    /// All fields (including raw painters) are validated and guaranteed to be valid for entire lifetime of XContext struct.
+    /// Creates new `XContext` with all necessary fields for drawing.
+    /// All fields (including raw painters) are validated and guaranteed to be valid for entire lifetime of `XContext` struct.
     pub fn new(config: &Opt) -> XContext {
         let display = XContext::open_display();
         // This is safe as display is pre-validated

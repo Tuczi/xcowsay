@@ -165,11 +165,8 @@ impl XCowsayParser {
                                     RgbColor::white(),
                                 ));
                             }
-                            SGR::Background(SGR::Color::Default) => {
-                                //ignore for now as we always have Default=Black background
-                            }
-                            SGR::Background(SGR::Color::Index(0)) => {
-                                //ignore for now as we always have Index(0)=Black background
+                            SGR::Background(SGR::Color::Default | SGR::Color::Index(0)) => {
+                                //ignore for now as we always have Default=Black | Index(0)=Black background
                             }
                             _ => log_unimplemented!(self, "C1 SGR", sgr),
                         }

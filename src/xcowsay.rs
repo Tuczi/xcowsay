@@ -1,6 +1,6 @@
 use std::thread;
 
-use crate::command::{Command, CommandOutputIterator};
+use crate::command::{Command, OutputIterator};
 use crate::config::Opt;
 use crate::control_code_parse::XCowsayParser;
 use crate::rgb_color::RgbColor;
@@ -48,10 +48,10 @@ pub trait DrawString {
 }
 
 impl XCowsay {
-    pub fn new(config: Opt) -> XCowsay {
-        let xcontext = XContext::new(&config);
+    pub fn new(config: &Opt) -> XCowsay {
+        let xcontext = XContext::new(config);
         log::info!("XContext init: {:?}", xcontext);
-        let drawer = XCowsayDrawer::new(&config, xcontext);
+        let drawer = XCowsayDrawer::new(config, xcontext);
         let parser = XCowsayParser::new();
         let command = Command::new(config.cmd.clone());
         let delay = Duration::from_secs(config.delay);
@@ -90,7 +90,7 @@ impl XCowsay {
         }
     }
 
-    fn parse_process_output(&mut self, output: &mut CommandOutputIterator) {
+    fn parse_process_output(&mut self, output: &mut OutputIterator) {
         while let Ok(Some(read_bytes)) = output.read() {
             let chars_parsed = self.parser.parse(read_bytes, &mut self.drawer);
             self.drawer.flush();

@@ -1,6 +1,6 @@
 # xcowsay
 
-`fortune | cowsay` as screensaver in XScreenSaver and xfce4-screensaver!
+`fortune | cowsay` as screensaver in `XScreenSaver` and xfce4-screensaver!
 
 xcowsay allows you to run **ANY** Linux command and display the output as your screensaver.
 Command will be refreshed (rerun) by xcowsay automatically.

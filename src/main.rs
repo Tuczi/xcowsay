@@ -1,16 +1,16 @@
 #![warn(
-rust_2018_idioms,
-future_incompatible,
-nonstandard_style,
-unused,
-rust_2021_compatibility,
-clippy::all,
-// clippy::pedantic, //TODO enable?
-clippy::cargo,
-missing_docs,
+    rust_2018_idioms,
+    future_incompatible,
+    nonstandard_style,
+    unused,
+    rust_2021_compatibility,
+    clippy::all,
+    // clippy::pedantic, // TODO enable?
+    clippy::cargo,
+    missing_docs
 )]
 #![deny(warnings)]
-//! `fortune | cowsay` as screensaver in XScreenSaver and xfce4-screensaver!
+//! `fortune | cowsay` as screensaver in `XScreenSaver` and xfce4-screensaver!
 //!
 //! xcowsay allows you to run **ANY** Linux command and display the output as your screensaver.
 //! Command will be refreshed (rerun) by xcowsay automatically.
@@ -40,7 +40,7 @@ fn main() {
     let opts = config::from_args();
     setup_logger(&opts);
     let result = std::panic::catch_unwind(|| {
-        let mut xcowsay = xcowsay::XCowsay::new(opts);
+        let mut xcowsay = xcowsay::XCowsay::new(&opts);
         log::info!("Xcowsay init finished");
         xcowsay.start_loop();
         log::info!("xevent loop finished");

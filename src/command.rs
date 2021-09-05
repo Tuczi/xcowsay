@@ -14,7 +14,7 @@ impl Command {
 
     /// Starts new process in the background and returns iterator over it's stdout.
     /// Returns `Err` if process cannot be started.
-    pub fn start_process_command(&self) -> std::io::Result<CommandOutputIterator> {
+    pub fn start_process_command(&self) -> std::io::Result<OutputIterator> {
         let child = std::process::Command::new("sh")
             .arg("-c")
             .arg(self.cmd.as_str())
@@ -25,7 +25,7 @@ impl Command {
             Ok(mut process) => {
                 let stdout = process.stdout.take().unwrap();
 
-                Ok(CommandOutputIterator {
+                Ok(OutputIterator {
                     buffer: [0; BUFFER_SIZE],
                     buffer_read_start: 0,
                     process,
@@ -40,7 +40,7 @@ impl Command {
 const BUFFER_SIZE: usize = 1024;
 
 /// Custom iterator over `process`'s `stdout` that uses fixed size byte `buffer`.
-pub struct CommandOutputIterator {
+pub struct OutputIterator {
     buffer: [u8; BUFFER_SIZE],
     buffer_read_start: usize,
     process: Child,
@@ -48,20 +48,20 @@ pub struct CommandOutputIterator {
 }
 
 #[derive(Debug, Error)]
-pub enum CommandOutputIteratorError {
+pub enum OutputIteratorError {
     #[error("Cannot check process status: {0}")]
     CheckProcessStatusFailed(std::io::Error),
     #[error("Cannot read process output: {0}")]
     ReadFailed(std::io::Error),
 }
 
-impl CommandOutputIterator {
+impl OutputIterator {
     /// Reads and returns available `stdout` of command process as `Ok(Some<&[u8]>)` if process is still running or some data is available.
     /// Returns `Some(None)` if command process finished and there is 0 bytes available to read.
     /// Method automatically kills command process and returns `Err(CommandOutputIteratorError)` if error occurred while checking command process status or reading data.
     ///
     /// Note that `Ok(Some(&[]))` is possible if there is no new data available in the buffer but process is still running
-    pub fn read(&mut self) -> Result<Option<&[u8]>, CommandOutputIteratorError> {
+    pub fn read(&mut self) -> Result<Option<&[u8]>, OutputIteratorError> {
         let process_status = self.process.try_wait();
         let process_finished = match process_status {
             Ok(process_status) => process_status.is_some(),
@@ -72,7 +72,7 @@ impl CommandOutputIterator {
                     e,
                     kill_result
                 );
-                return Err(CommandOutputIteratorError::CheckProcessStatusFailed(e));
+                return Err(OutputIteratorError::CheckProcessStatusFailed(e));
             }
         };
 
@@ -96,7 +96,7 @@ impl CommandOutputIterator {
                         kill_result
                     );
                 }
-                Err(CommandOutputIteratorError::ReadFailed(e))
+                Err(OutputIteratorError::ReadFailed(e))
             }
         };
     }
@@ -136,7 +136,7 @@ mod test {
         assert_eq!(None, last_read);
     }
 
-    fn start_command(cmd: &str) -> CommandOutputIterator {
+    fn start_command(cmd: &str) -> OutputIterator {
         let mut command_output = Command::new(cmd.to_owned())
             .start_process_command()
             .unwrap();
