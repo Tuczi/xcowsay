@@ -129,7 +129,7 @@ mod test {
         assert_eq!(b"hello\n", first_read);
 
         while let Some(output) = command_output.read().unwrap() {
-            assert!(output.is_empty()); //TODO how to match empty slice better?
+            assert!(output.is_empty());
         }
 
         let last_read = command_output.read().unwrap();
@@ -137,7 +137,7 @@ mod test {
     }
 
     fn start_command(cmd: &str) -> OutputIterator {
-        let mut command_output = Command::new(cmd.to_owned())
+        let command_output = Command::new(cmd.to_owned())
             .start_process_command()
             .unwrap();
         command_output
@@ -147,10 +147,16 @@ mod test {
     fn should_await_till_process_finish() {
         let mut command_output = start_command("sleep 0.1");
 
-        let first_read = command_output.read().unwrap();
+        match command_output.read().unwrap() {
+            Some(output) => assert!(output.is_empty()),
+            None => panic!("Process finished before first read"),
+        }
 
-        // TODO first should be Some(empty slice)
+        while let Some(output) = command_output.read().unwrap() {
+            assert!(output.is_empty());
+        }
 
-        todo!("implement waiting until None");
+        let last_read = command_output.read().unwrap();
+        assert_eq!(None, last_read);
     }
 }
